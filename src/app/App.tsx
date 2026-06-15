@@ -230,33 +230,44 @@ export default function App() {
           overflow: "hidden",
         }}
       >
-        {/* Background wordmark — large outlined, natural proportions */}
         <div
           style={{
             position: "absolute",
-            top: "clamp(8px, 1.5vw, 20px)",
+            top: "-36px",
             left: 0,
             width: "100%",
-            textAlign: "center",
             zIndex: 0,
             userSelect: "none",
             pointerEvents: "none",
-            lineHeight: 1,
           }}
         >
-          <span
+          <svg
+            viewBox="0 0 100 30"
+            preserveAspectRatio="none"
             style={{
-              fontFamily: "'Noto Sans KR', sans-serif",
-              fontWeight: 900,
-              fontSize: "clamp(140px, 26vw, 380px)",
-              letterSpacing: "-0.03em",
-              color: "transparent",
-              WebkitTextStroke: "1.5px #E6007E",
-              whiteSpace: "nowrap",
+              display: "block",
+              width: "100%",
+              height: "520px",
             }}
           >
-            LG U+
-          </span>
+            <text
+              x="50"
+              y="16"
+              textAnchor="middle"
+              dominantBaseline="central"
+              textLength="98"
+              lengthAdjust="spacingAndGlyphs"
+              fontFamily="'Noto Sans KR', sans-serif"
+              fontWeight={900}
+              fontSize="26"
+              fill="none"
+              stroke="#E6007E"
+              strokeWidth={3}
+              vectorEffect="non-scaling-stroke"
+            >
+              LG U+
+            </text>
+          </svg>
         </div>
 
         {/* Main letter — centered */}
