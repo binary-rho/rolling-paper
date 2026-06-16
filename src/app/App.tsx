@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Filter, Pencil, Sticker, ChevronDown } from "lucide-react";
+import { Filter, Pencil, Sticker, ChevronDown, X } from "lucide-react";
 import { LetterCard } from "./components/LetterCard";
 import { MemoCard } from "./components/MemoCard";
 import { WriteMemoModal } from "./components/WriteMemoModal";
@@ -36,7 +36,19 @@ export interface Sticker {
 const CANVAS_HEIGHT = 1000;
 const BOARD_TOP_SPACE = "clamp(72px, 9vh, 120px)";
 const BOARD_BOTTOM_SPACE = "min(72vh, 680px)";
+/**
+ * 이미지 스티커 토큰은 `img:` 접두사로 식별합니다. 이모지와 한 필드(`emoji`)에
+ * 함께 저장되므로, DB 스키마를 바꾸지 않고 이미지 스티커를 표현할 수 있습니다.
+ */
+const IMAGE_STICKER_PREFIX = "img:";
+
+/** 이미지 스티커 토큰 → public 경로 매핑. */
+const STICKER_IMAGES: Record<string, string> = {
+  "img:lion": "/lion.png",
+};
+
 const STICKER_OPTIONS = [
+  "img:lion",
   "🎉",
   "🌟",
   "💐",
@@ -56,6 +68,35 @@ const STICKER_OPTIONS = [
   "🥂",
   "💫",
 ];
+
+const isImageSticker = (value: string) => value.startsWith(IMAGE_STICKER_PREFIX);
+
+/** 보드에 표시되는 스티커 크기(px). 이미지가 이모지보다 약간 큽니다. */
+const EMOJI_STICKER_SIZE_PX = 32;
+const IMAGE_STICKER_SIZE_PX = 48;
+
+/** 스티커가 이미지 토큰이면 <img>, 아니면 이모지 텍스트를 렌더링합니다. */
+function StickerContent({ value, size }: { value: string; size?: number }) {
+  if (isImageSticker(value)) {
+    const px = size ?? IMAGE_STICKER_SIZE_PX;
+    return (
+      <img
+        src={STICKER_IMAGES[value]}
+        alt="스티커"
+        draggable={false}
+        style={{
+          width: `${px}px`,
+          height: `${px}px`,
+          objectFit: "contain",
+          display: "block",
+          pointerEvents: "none",
+        }}
+      />
+    );
+  }
+  const px = size ?? EMOJI_STICKER_SIZE_PX;
+  return <span style={{ fontSize: `${px}px`, lineHeight: 1 }}>{value}</span>;
+}
 
 function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -78,6 +119,17 @@ type DragState = {
   origY: number;
 };
 
+type StickerDragState = {
+  stickerId: string;
+  startPageX: number;
+  startPageY: number;
+  origX: number;
+  origY: number;
+};
+
+/** 클릭과 드래그를 구분하는 최소 이동 거리(px). 이보다 작으면 클릭(삭제)으로 처리합니다. */
+const STICKER_DRAG_THRESHOLD_PX = 4;
+
 export default function App() {
   const [sessionId] = useState(getSession);
   const {
@@ -87,6 +139,7 @@ export default function App() {
     moveMemo,
     deleteMemo,
     addSticker,
+    moveSticker,
     deleteSticker,
   } = useBoard(sessionId);
   const [modalOpen, setModalOpen] = useState(false);
@@ -101,10 +154,16 @@ export default function App() {
   const [draggingMemos, setDraggingMemos] = useState<
     Record<string, { x: number; y: number }>
   >({});
+  const [stickerDrag, setStickerDrag] = useState<StickerDragState | null>(null);
+  const [draggingStickerPos, setDraggingStickerPos] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const [canvasHeight, setCanvasHeight] = useState(CANVAS_HEIGHT);
   const canvasRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const wasDragging = useRef(false);
+  const stickerWasDragging = useRef(false);
 
   // Keep memo/sticker coordinates accurate as the board height changes
   useEffect(() => {
@@ -166,6 +225,64 @@ export default function App() {
       });
     },
     [memos],
+  );
+
+  // Mouse move & up for dragging stickers
+  useEffect(() => {
+    if (!stickerDrag) return;
+
+    const handleMove = (e: MouseEvent) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const dx = ((e.pageX - stickerDrag.startPageX) / canvas.offsetWidth) * 100;
+      const dy = ((e.pageY - stickerDrag.startPageY) / canvas.offsetHeight) * 100;
+      const movedPx =
+        Math.abs(e.pageX - stickerDrag.startPageX) +
+        Math.abs(e.pageY - stickerDrag.startPageY);
+      if (movedPx > STICKER_DRAG_THRESHOLD_PX) {
+        stickerWasDragging.current = true;
+      }
+      setDraggingStickerPos({
+        x: Math.max(0, Math.min(98, stickerDrag.origX + dx)),
+        y: Math.max(0, Math.min(98, stickerDrag.origY + dy)),
+      });
+    };
+
+    const handleUp = () => {
+      if (stickerWasDragging.current && draggingStickerPos) {
+        moveSticker(stickerDrag.stickerId, draggingStickerPos.x, draggingStickerPos.y);
+      }
+      setStickerDrag(null);
+      setDraggingStickerPos(null);
+      setTimeout(() => {
+        stickerWasDragging.current = false;
+      }, 50);
+    };
+
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
+    };
+  }, [stickerDrag, draggingStickerPos, moveSticker]);
+
+  const handleStickerDragStart = useCallback(
+    (stickerId: string, e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const sticker = stickers.find((s) => s.id === stickerId);
+      if (!sticker) return;
+      stickerWasDragging.current = false;
+      setStickerDrag({
+        stickerId,
+        startPageX: e.pageX,
+        startPageY: e.pageY,
+        origX: sticker.x,
+        origY: sticker.y,
+      });
+    },
+    [stickers],
   );
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -322,30 +439,69 @@ export default function App() {
         {/* Stickers */}
         {stickers.map((sticker) => {
           const isOwn = sticker.sessionId === sessionId;
+          const isThisDragging = stickerDrag?.stickerId === sticker.id;
+          // 드래그 중인 동안에는 임시 좌표로 따라오게 합니다.
+          const pos =
+            isThisDragging && draggingStickerPos
+              ? draggingStickerPos
+              : { x: sticker.x, y: sticker.y };
           return (
             <div
               key={sticker.id}
-              onClick={(e) => {
-                if (!selectedSticker && isOwn) {
-                  e.stopPropagation();
-                  deleteSticker(sticker.id);
+              onMouseDown={(e) => {
+                // 스티커를 붙이는 모드가 아닐 때만, 자기 스티커를 드래그합니다.
+                if (isOwn && !selectedSticker) {
+                  handleStickerDragStart(sticker.id, e);
                 }
               }}
               className="group"
               style={{
                 position: "absolute",
-                left: `${sticker.x}%`,
-                top: `${(sticker.y / 100) * canvasHeight}px`,
+                left: `${pos.x}%`,
+                top: `${(pos.y / 100) * canvasHeight}px`,
                 transform: `rotate(${sticker.rotation}deg)`,
-                fontSize: "32px",
                 lineHeight: 1,
-                zIndex: 8,
-                cursor: isOwn && !selectedSticker ? "pointer" : "default",
+                zIndex: isThisDragging ? 30 : 8,
+                cursor: isOwn && !selectedSticker
+                  ? isThisDragging
+                    ? "grabbing"
+                    : "grab"
+                  : "default",
                 userSelect: "none",
                 pointerEvents: "auto",
               }}
             >
-              {sticker.emoji}
+              <StickerContent value={sticker.emoji} />
+              {isOwn && !selectedSticker && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteSticker(sticker.id);
+                  }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  title="스티커 삭제"
+                  style={{
+                    position: "absolute",
+                    top: "-8px",
+                    right: "-8px",
+                    width: "20px",
+                    height: "20px",
+                    borderRadius: "50%",
+                    background: "rgba(0,0,0,0.55)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: 0,
+                    transition: "opacity 0.15s",
+                    cursor: "pointer",
+                    border: "none",
+                    zIndex: 1,
+                  }}
+                  className="sticker-delete-btn"
+                >
+                  <X size={11} color="#FFF" strokeWidth={3} />
+                </button>
+              )}
             </div>
           );
         })}
@@ -423,7 +579,7 @@ export default function App() {
                 }}
               >
                 {selectedSticker
-                  ? `${selectedSticker} 선택됨 — 보드에 클릭해서 붙이기`
+                  ? "선택됨 — 보드에 클릭해서 붙이기"
                   : "스티커를 골라 보드에 붙이세요"}
               </p>
               {STICKER_OPTIONS.map((emoji) => (
@@ -441,7 +597,6 @@ export default function App() {
                         ? "rgba(230,0,126,0.1)"
                         : "#F5F5F5",
                     border: `1.5px solid ${selectedSticker === emoji ? "#E6007E" : "transparent"}`,
-                    fontSize: "20px",
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
@@ -451,7 +606,7 @@ export default function App() {
                       selectedSticker === emoji ? "scale(1.15)" : "scale(1)",
                   }}
                 >
-                  {emoji}
+                  <StickerContent value={emoji} size={20} />
                 </button>
               ))}
             </motion.div>

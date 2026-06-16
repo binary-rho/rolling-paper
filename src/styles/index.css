@@ -14,3 +14,8 @@
 .drag-scroll:active {
   cursor: grabbing;
 }
+
+/* 스티커에 마우스를 올렸을 때만 삭제(×) 버튼 노출 */
+.group:hover .sticker-delete-btn {
+  opacity: 1 !important;
+}

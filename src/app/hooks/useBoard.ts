@@ -103,6 +103,7 @@ export interface UseBoardResult {
   moveMemo: (id: string, x: number, y: number) => void;
   deleteMemo: (id: string) => void;
   addSticker: (input: AddStickerInput) => void;
+  moveSticker: (id: string, x: number, y: number) => void;
   deleteSticker: (id: string) => void;
 }
 
@@ -267,6 +268,17 @@ export function useBoard(sessionId: string, fallbackSeed: Memo[] = []): UseBoard
     [sessionId]
   );
 
+  const moveSticker = useCallback((id: string, x: number, y: number) => {
+    setStickers((prev) => prev.map((s) => (s.id === id ? { ...s, x, y } : s)));
+    if (isSupabaseEnabled && supabase) {
+      supabase
+        .from("stickers")
+        .update({ x, y })
+        .eq("id", id)
+        .then(({ error }) => error && console.error("sticker move failed", error));
+    }
+  }, []);
+
   const deleteSticker = useCallback((id: string) => {
     setStickers((prev) => prev.filter((s) => s.id !== id));
     if (isSupabaseEnabled && supabase) {
@@ -278,5 +290,5 @@ export function useBoard(sessionId: string, fallbackSeed: Memo[] = []): UseBoard
     }
   }, []);
 
-  return { memos, stickers, addMemo, moveMemo, deleteMemo, addSticker, deleteSticker };
+  return { memos, stickers, addMemo, moveMemo, deleteMemo, addSticker, moveSticker, deleteSticker };
 }

@@ -300,6 +300,7 @@ export function FilterPopup({ open, onClose, memos }: FilterPopupProps) {
                             color: "#1A1A1A",
                             lineHeight: 1.65,
                             wordBreak: "keep-all",
+                            whiteSpace: "pre-wrap",
                             marginBottom: "8px",
                           }}
                         >

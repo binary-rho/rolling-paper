@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, ChevronDown } from "lucide-react";
 import type { NoteColor } from "../App";
@@ -13,6 +13,9 @@ const TEAMS = [
   "디지털플랫폼Ops팀",
   "팀 없음",
 ];
+
+/** 실시간 미리보기 영역의 최대 높이(px). 넘으면 내부 스크롤이 생깁니다. */
+const PREVIEW_MAX_HEIGHT_PX = 260;
 
 const COLOR_OPTIONS: { value: NoteColor; bg: string; label: string }[] = [
   { value: "yellow", bg: "#FFF176", label: "옐로우" },
@@ -42,6 +45,28 @@ export function WriteMemoModal({
   const [team, setTeam] = useState("");
   const [message, setMessage] = useState("");
   const [color, setColor] = useState<NoteColor>("yellow");
+  const previewRef = useRef<HTMLDivElement>(null);
+
+  // 메시지를 입력할 때마다 미리보기를 맨 아래로 스크롤해 방금 친 줄이 보이게 합니다.
+  useEffect(() => {
+    const preview = previewRef.current;
+    if (preview) {
+      preview.scrollTop = preview.scrollHeight;
+    }
+  }, [message]);
+
+  const resetForm = () => {
+    setAuthorName("");
+    setTeam("");
+    setMessage("");
+    setColor("yellow");
+  };
+
+  // 작성 중이던 내용을 비우고 모달을 닫습니다(제출·X·배경 클릭 공통).
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
 
   const handleSubmit = () => {
     if (!authorName.trim() || !team || !message.trim()) return;
@@ -51,11 +76,7 @@ export function WriteMemoModal({
       message: message.trim(),
       color,
     });
-    setAuthorName("");
-    setTeam("");
-    setMessage("");
-    setColor("yellow");
-    onClose();
+    handleClose();
   };
 
   const isValid = authorName.trim() && team && message.trim();
@@ -70,7 +91,7 @@ export function WriteMemoModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={handleClose}
             style={{
               position: "fixed",
               inset: 0,
@@ -137,7 +158,7 @@ export function WriteMemoModal({
                     </h2>
                   </div>
                   <button
-                    onClick={onClose}
+                    onClick={handleClose}
                     style={{
                       width: "34px",
                       height: "34px",
@@ -156,11 +177,15 @@ export function WriteMemoModal({
 
                 {/* Live preview */}
                 <div
+                  ref={previewRef}
+                  className="no-scrollbar"
                   style={{
                     background: selectedBg,
                     borderRadius: "6px",
-                    padding: "16px",
+                    padding: "20px 16px 16px",
                     minHeight: "80px",
+                    maxHeight: `${PREVIEW_MAX_HEIGHT_PX}px`,
+                    overflowY: "auto",
                     transition: "background 0.3s",
                     position: "relative",
                   }}
@@ -168,9 +193,9 @@ export function WriteMemoModal({
                   <div
                     style={{
                       position: "absolute",
-                      top: 0,
+                      top: "6px",
                       left: "50%",
-                      transform: "translate(-50%, -50%)",
+                      transform: "translateX(-50%)",
                       width: "36px",
                       height: "14px",
                       background: "rgba(255,255,255,0.5)",
@@ -185,6 +210,7 @@ export function WriteMemoModal({
                       lineHeight: 1.6,
                       minHeight: "32px",
                       wordBreak: "keep-all",
+                      whiteSpace: "pre-wrap",
                     }}
                   >
                     {message || "메시지를 입력하면 여기에 보여요"}
