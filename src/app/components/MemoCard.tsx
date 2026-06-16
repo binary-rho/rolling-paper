@@ -76,6 +76,7 @@ export function MemoCard({ memo, canDelete, onDelete, onDragStart, isDragging, z
       {/* Delete button */}
       {canDelete && (
         <button
+          data-export-hide
           onClick={(e) => {
             e.stopPropagation();
             onDelete(memo.id);

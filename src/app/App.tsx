@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Filter, Pencil, Sticker, ChevronDown, X } from "lucide-react";
+import { Filter, Sticker, ChevronDown, X, Download } from "lucide-react";
+import { Toaster, toast } from "sonner";
 import { LetterCard } from "./components/LetterCard";
 import { MemoCard } from "./components/MemoCard";
 import { WriteMemoModal } from "./components/WriteMemoModal";
@@ -8,6 +9,7 @@ import { FilterPopup } from "./components/FilterPopup";
 import { AchievementCarousel } from "./components/AchievementCarousel";
 import { SiteFooter } from "./components/SiteFooter";
 import { useBoard } from "./hooks/useBoard";
+import { exportRollingPaperPdf } from "../lib/exportPdf";
 
 export type NoteColor = "yellow" | "pink" | "mint" | "sky" | "lavender";
 
@@ -323,6 +325,22 @@ export default function App() {
     contentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
+  const [exporting, setExporting] = useState(false);
+  const handleExportPdf = useCallback(async () => {
+    if (exporting) return;
+    setExporting(true);
+    const toastId = toast.loading("PDF 만드는 중…");
+    try {
+      await exportRollingPaperPdf();
+      toast.success("rollingpaper.pdf 저장 완료!", { id: toastId });
+    } catch (err) {
+      console.error("PDF export failed", err);
+      toast.error("PDF 저장에 실패했어요. 다시 시도해 주세요.", { id: toastId });
+    } finally {
+      setExporting(false);
+    }
+  }, [exporting]);
+
   return (
     <div
       style={{
@@ -335,6 +353,7 @@ export default function App() {
       {/* Board — one big canvas: place letters & stickers anywhere */}
       <div
         ref={canvasRef}
+        data-export="board"
         onClick={handleCanvasClick}
         style={{
           position: "relative",
@@ -392,6 +411,7 @@ export default function App() {
 
         {/* Scroll-down button (wrapper lets clicks pass through to the board) */}
         <div
+          data-export-hide
           style={{
             display: "flex",
             justifyContent: "center",
@@ -474,6 +494,7 @@ export default function App() {
               <StickerContent value={sticker.emoji} />
               {isOwn && !selectedSticker && (
                 <button
+                  data-export-hide
                   onClick={(e) => {
                     e.stopPropagation();
                     deleteSticker(sticker.id);
@@ -538,6 +559,7 @@ export default function App() {
 
       {/* Floating UI buttons — bottom right */}
       <div
+        data-export-hide
         style={{
           position: "fixed",
           bottom: "28px",
@@ -621,6 +643,45 @@ export default function App() {
             alignItems: "center",
           }}
         >
+          {/* PDF export button */}
+          <motion.button
+            whileHover={{ scale: exporting ? 1 : 1.06 }}
+            whileTap={{ scale: exporting ? 1 : 0.94 }}
+            onClick={handleExportPdf}
+            disabled={exporting}
+            style={{
+              width: "48px",
+              height: "48px",
+              borderRadius: "50%",
+              background: "#FFFFFF",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: exporting ? "default" : "pointer",
+              border: "none",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)",
+              opacity: exporting ? 0.55 : 1,
+              transition: "opacity 0.2s",
+            }}
+            title="PDF로 저장"
+          >
+            {exporting ? (
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
+                style={{
+                  width: "18px",
+                  height: "18px",
+                  borderRadius: "50%",
+                  border: "2px solid rgba(0,0,0,0.15)",
+                  borderTopColor: "#1A1A1A",
+                }}
+              />
+            ) : (
+              <Download size={18} color="#1A1A1A" />
+            )}
+          </motion.button>
+
           {/* Filter button */}
           <motion.button
             whileHover={{ scale: 1.06 }}
@@ -715,6 +776,7 @@ export default function App() {
 
       {/* Hint text — top right */}
       <div
+        data-export-hide
         style={{
           position: "fixed",
           top: "20px",
@@ -745,6 +807,9 @@ export default function App() {
         onClose={() => setFilterOpen(false)}
         memos={memos}
       />
+
+      {/* Toast host */}
+      <Toaster position="top-center" richColors />
     </div>
   );
 }
