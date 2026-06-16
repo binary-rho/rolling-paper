@@ -5,3 +5,12 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* 드래그 스크롤 트랙: 누르고 있는 동안 잡는 커서로 전환 */
+.drag-scroll {
+  cursor: grab;
+}
+
+.drag-scroll:active {
+  cursor: grabbing;
+}

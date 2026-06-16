@@ -1,8 +1,75 @@
+import { useRef } from "react";
 import { motion } from "motion/react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 
 const PLACEHOLDER_BG = "linear-gradient(135deg, #F2F2F2 0%, #E7E7E7 100%)";
 const EDGE_PADDING = "clamp(16px, 3vw, 28px)";
+
+/** 드래그로 인식하기 위한 최소 이동 거리(px). 이보다 작으면 클릭으로 간주합니다. */
+const DRAG_THRESHOLD_PX = 5;
+
+/**
+ * 가로 스크롤 트랙을 마우스로 꾹 눌러 드래그해서 스크롤할 수 있게 하는
+ * 핸들러 모음을 반환합니다. 트랙패드의 가로 제스처는 기본 동작 그대로 둡니다.
+ */
+function useDragScroll() {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const dragState = useRef({ isDown: false, startX: 0, startScrollLeft: 0, moved: false });
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    const track = trackRef.current;
+    if (!track) return;
+    dragState.current = {
+      isDown: true,
+      startX: e.pageX,
+      startScrollLeft: track.scrollLeft,
+      moved: false,
+    };
+    // 드래그 중에는 스냅이 손가락을 따라오지 못하게 끕니다(뚝뚝 끊김 방지).
+    track.style.scrollSnapType = "none";
+    track.style.scrollBehavior = "auto";
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const track = trackRef.current;
+    if (!track || !dragState.current.isDown) return;
+    e.preventDefault();
+    const distance = e.pageX - dragState.current.startX;
+    if (Math.abs(distance) > DRAG_THRESHOLD_PX) {
+      dragState.current.moved = true;
+    }
+    track.scrollLeft = dragState.current.startScrollLeft - distance;
+  };
+
+  const endDrag = () => {
+    const track = trackRef.current;
+    if (!track || !dragState.current.isDown) return;
+    dragState.current.isDown = false;
+    // 드래그가 끝나면 스냅을 복원해 가장 가까운 카드로 정렬되게 합니다.
+    track.style.scrollSnapType = "";
+    track.style.scrollBehavior = "";
+  };
+
+  // 드래그 직후 발생하는 클릭(링크/버튼 이동 등)을 차단합니다.
+  const handleClickCapture = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (dragState.current.moved) {
+      e.preventDefault();
+      e.stopPropagation();
+      dragState.current.moved = false;
+    }
+  };
+
+  return {
+    trackRef,
+    trackHandlers: {
+      onMouseDown: handleMouseDown,
+      onMouseMove: handleMouseMove,
+      onMouseUp: endDrag,
+      onMouseLeave: endDrag,
+      onClickCapture: handleClickCapture,
+    },
+  };
+}
 
 interface Milestone {
   year: string;
@@ -51,6 +118,8 @@ const MILESTONES: Milestone[] = [
 ];
 
 export function AchievementCarousel() {
+  const { trackRef, trackHandlers } = useDragScroll();
+
   return (
     <section
       style={{
@@ -90,14 +159,17 @@ export function AchievementCarousel() {
 
       {/* Full-width scroll track */}
       <div
-        className="no-scrollbar"
+        ref={trackRef}
+        className="no-scrollbar drag-scroll"
+        {...trackHandlers}
         style={{
           display: "flex",
           gap: "20px",
           overflowX: "auto",
-          scrollSnapType: "x mandatory",
+          scrollSnapType: "x proximity",
           padding: `4px ${EDGE_PADDING} 8px`,
           scrollbarWidth: "none",
+          userSelect: "none",
         }}
       >
         {MILESTONES.map((milestone) => (
