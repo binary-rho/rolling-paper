@@ -135,6 +135,7 @@ export function MemoCard({ memo, canDelete, onDelete, onDragStart, isDragging, z
           color: "#1A1A1A",
           lineHeight: 1.65,
           wordBreak: "keep-all",
+          whiteSpace: "pre-wrap",
           marginBottom: "10px",
         }}
       >
