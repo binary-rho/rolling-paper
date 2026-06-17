@@ -14,7 +14,12 @@ const DRAG_THRESHOLD_PX = 5;
  */
 function useDragScroll() {
   const trackRef = useRef<HTMLDivElement>(null);
-  const dragState = useRef({ isDown: false, startX: 0, startScrollLeft: 0, moved: false });
+  const dragState = useRef({
+    isDown: false,
+    startX: 0,
+    startScrollLeft: 0,
+    moved: false,
+  });
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     const track = trackRef.current;
@@ -81,39 +86,94 @@ interface Milestone {
 
 const MILESTONES: Milestone[] = [
   {
-    year: "2021",
-    title: "랩 출범",
-    description: "디지털플랫폼개발랩의 첫 시작을 팀장님과 함께 열었습니다.",
+    year: "2022",
+    title: "우리 팀, 한자리에",
+    description: "다 함께 모여 남긴 단체사진. 이때부터 한 팀이었어요.",
+    image: "/2022-groupphoto.jpeg",
   },
   {
     year: "2022",
-    title: "신규 플랫폼 런칭",
-    description: "수많은 밤을 지새우며 만든 첫 결실, 잊지 못할 순간이에요.",
+    title: "다 같이 회식",
+    description: "고생한 서로를 다독이며 함께한 따뜻한 저녁.",
+    image: "/2022-dinner.jpeg",
   },
   {
     year: "2023",
-    title: "전사 우수상 수상",
-    description: "팀장님의 리더십으로 일군 값진 성과였습니다.",
+    title: "Ignite",
+    description: "새로운 도전 앞에서 함께 불을 지핀 순간.",
+    image: "/2023-ignite.jpeg",
+  },
+  {
+    year: "2023",
+    title: "해커톤",
+    description: "밤새 머리를 맞대고 만들어낸 우리만의 결과물.",
+    image: "/2023-hackaton.jpeg",
+  },
+  {
+    year: "2023",
+    title: "해커톤, 그 열기",
+    description: "치열했던 만큼 더 끈끈해진 우리 팀.",
+    image: "/2023-hackaton2.jpeg",
+  },
+  {
+    year: "2023",
+    title: "워크샵",
+    description: "일에서 한 걸음 물러나 서로를 알아간 시간.",
+    image: "/2023-workshop.jpeg",
+  },
+  {
+    year: "2023",
+    title: "카페에서",
+    description: "잠깐의 여유, 그치만 오래 기억에 남을 한 컷.",
+    image: "/2023-cafe.jpeg",
   },
   {
     year: "2024",
-    title: "워크샵 & 회식",
-    description: "일만큼이나 즐거웠던 우리 팀의 따뜻한 추억들.",
+    title: "9월의 산타",
+    description: "늘 통크게 선물해주셨던 형윤님.",
+    image: "/2024-moono.jpeg",
+  },
+  {
+    year: "2024",
+    title: "마당 출연",
+    description: "간편결제 개발자로 TV 출연.",
+    image: "/2024-10.png",
   },
   {
     year: "2025",
-    title: "새로운 출발",
-    description: "이제 새 길 위에서도 늘 행복하시길 응원하겠습니다.",
+    title: "디지털고객경험지수 2년 연속 1위",
+    description: "LG유플러스의 값진 성과, 그 뒤엔 팀장님의 손길이 있었습니다.",
+    image: "/2025-first.png",
+  },
+  {
+    year: "2025",
+    title: "타운홀",
+    description: "함께 방향을 맞추고 미래를 그렸던 자리.",
+    image: "/2025-townhall.jpg",
+  },
+  {
+    year: "2025",
+    title: "다시, 회식",
+    description: "변함없이 즐거웠던 우리 팀의 저녁.",
+    image: "/2025-dinner.jpeg",
   },
   {
     year: "2026",
-    title: "새로운 출발",
-    description: "이제 새 길 위에서도 늘 행복하시길 응원하겠습니다.",
+    title: "워크샵",
+    description: "또 한 번 함께 떠나 채운 소중한 추억.",
+    image: "/2026-workshop.jpeg",
   },
   {
-    year: "2027",
-    title: "새로운 출발",
-    description: "이제 새 길 위에서도 늘 행복하시길 응원하겠습니다.",
+    year: "2026",
+    title: "워크샵, 함께",
+    description: "웃음이 끊이지 않았던 그날의 순간들.",
+    image: "/2026-workshop2.jpeg",
+  },
+  {
+    year: "2026",
+    title: "워크샵, 마지막까지",
+    description: "끝까지 함께해 준 모두에게 고마운 시간.",
+    image: "/2026-workshop3.jpeg",
   },
 ];
 
@@ -172,9 +232,9 @@ export function AchievementCarousel() {
           userSelect: "none",
         }}
       >
-        {MILESTONES.map((milestone) => (
+        {MILESTONES.map((milestone, i) => (
           <motion.article
-            key={milestone.year}
+            key={milestone.image ?? `${milestone.year}-${i}`}
             whileHover={{ y: -6 }}
             transition={{ type: "spring", stiffness: 300, damping: 22 }}
             style={{
@@ -221,20 +281,32 @@ export function AchievementCarousel() {
               )}
             </div>
 
-            {/* Caption */}
+            {/* Caption — 연도(제목) / 이벤트명 / 설명 */}
             <div style={{ padding: "18px 4px 0" }}>
               <h3
                 style={{
+                  fontFamily: "'Montserrat', 'Noto Sans KR', sans-serif",
+                  fontSize: "22px",
+                  fontWeight: 800,
+                  color: "#E6007E",
+                  marginBottom: "4px",
+                  letterSpacing: "0.01em",
+                }}
+              >
+                {milestone.year}
+              </h3>
+              <p
+                style={{
                   fontFamily: "'Noto Sans KR', sans-serif",
-                  fontSize: "18px",
+                  fontSize: "15px",
                   fontWeight: 700,
                   color: "#1A1A1A",
-                  marginBottom: "8px",
+                  marginBottom: "6px",
                   letterSpacing: "0.01em",
                 }}
               >
                 {milestone.title}
-              </h3>
+              </p>
               <p
                 style={{
                   fontFamily: "'Noto Sans KR', sans-serif",

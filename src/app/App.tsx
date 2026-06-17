@@ -44,15 +44,26 @@ const BOARD_BOTTOM_SPACE = "1600px";
 
 /**
  * 보드 배경: 파스텔 그라데이션 + 도트(피그잼 느낌의 땡땡이).
- * 모두 매우 연하게 깔아 메모·상장을 가리지 않습니다.
+ * 도트는 색이 다른 두 레이어(진한 분홍 / 연한 분홍)를 겹쳐서,
+ * 위(진한 분홍) → 아래(연한 분홍)로 색만 옅어지고 도트 자체는 끝까지 보입니다.
  */
-const BOARD_DOT_PATTERN =
-  "radial-gradient(circle, rgba(230,0,126,0.16) 1.4px, transparent 1.4px)";
 const BOARD_GRADIENT =
   "linear-gradient(180deg, #FFFFFF 0%, #FFF6FB 60%, #FDEFF7 100%)";
 
 /** 배경 도트 간격. */
 const BOARD_DOT_SIZE = "36px 36px";
+
+/** 진한 분홍 도트 — 위쪽에서 진하고 아래로 갈수록 사라짐. */
+const BOARD_DOT_STRONG =
+  "radial-gradient(circle, rgba(230,0,126,0.42) 1.4px, transparent 1.4px)";
+const BOARD_DOT_STRONG_MASK =
+  "linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%)";
+
+/** 연한 분홍 도트 — 위쪽에서 옅고 아래로 갈수록 진해짐(진한 도트가 사라진 자리를 채움). */
+const BOARD_DOT_SOFT =
+  "radial-gradient(circle, rgba(230,0,126,0.12) 1.4px, transparent 1.4px)";
+const BOARD_DOT_SOFT_MASK =
+  "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 100%)";
 
 /** 배경 LG U+ 워드마크 윤곽선 색 — 메모를 가리지 않게 아주 연한 핑크. */
 const WORDMARK_STROKE = "rgba(230,0,126, 0.5)";
@@ -564,11 +575,38 @@ export default function App() {
           width: "100%",
           paddingTop: BOARD_TOP_SPACE,
           cursor: "default",
-          backgroundImage: `${BOARD_DOT_PATTERN}, ${BOARD_GRADIENT}`,
-          backgroundSize: `${BOARD_DOT_SIZE}, 100% 100%`,
+          backgroundImage: BOARD_GRADIENT,
           overflow: "hidden",
         }}
       >
+        {/* 도트 레이어 — 진한 분홍(위) + 연한 분홍(아래)을 겹쳐
+            위→아래로 색만 옅어지고 도트는 끝까지 보이게 한다. */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 0,
+            pointerEvents: "none",
+            backgroundImage: BOARD_DOT_STRONG,
+            backgroundSize: BOARD_DOT_SIZE,
+            WebkitMaskImage: BOARD_DOT_STRONG_MASK,
+            maskImage: BOARD_DOT_STRONG_MASK,
+          }}
+        />
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 0,
+            pointerEvents: "none",
+            backgroundImage: BOARD_DOT_SOFT,
+            backgroundSize: BOARD_DOT_SIZE,
+            WebkitMaskImage: BOARD_DOT_SOFT_MASK,
+            maskImage: BOARD_DOT_SOFT_MASK,
+          }}
+        />
         {/* <div
           style={{
             position: "absolute",
