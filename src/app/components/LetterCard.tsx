@@ -16,7 +16,7 @@ export function LetterCard({ memoCount }: LetterCardProps) {
       style={{
         position: "relative",
         margin: "5vw auto 0",
-        width: "min(520px, 94vw)",
+        width: "min(420px, 88vw)",
         zIndex: 10,
         pointerEvents: "auto",
         cursor: "default",
@@ -169,54 +169,16 @@ export function LetterCard({ memoCount }: LetterCardProps) {
           >
             <p style={{ marginBottom: "16px" }}>
               위 사람은 유플러스 FE팀 팀장으로 재직하는 동안, 단 한 줄의 버그도
-              그냥 넘기지 않는 깐깐함과, 어떤 무리한 요구 앞에서도{" "}
+              그냥 넘기지 않는 깐깐함과 어떤 무리한 요구 앞에서도{" "}
               <strong style={{ color: "#1a1a1a" }}>"네, 됩니다"</strong>를
               외치는 든든함으로 랩 전체를 지탱해 왔습니다.
             </p>
             <p style={{ marginBottom: "16px" }}>
-              그 실력과 영향력이 국내 수요를 한참 초과한 나머지, 마침내 한반도가
-              홀로 감당하기 어려운 수준에 이르렀으므로, 이에 부득이하게 글로벌
+              그 실력이 국내 수요를 한참 초과한 나머지, 이에 부득이하게 글로벌
               시장으로의 <strong style={{ color: "#1a1a1a" }}>'수출'</strong>을
-              정식 승인하는 바입니다.
-            </p>
-
-            {/* Spec list */}
-            <div
-              style={{
-                margin: "18px 0",
-                padding: "16px 18px",
-                background: "rgba(212,175,55,0.07)",
-                border: "1px solid rgba(201,162,39,0.3)",
-                borderRadius: "4px",
-                fontSize: "13px",
-                lineHeight: 1.95,
-              }}
-            >
-              <div>
-                <span style={{ color: "#8a6d1f", fontWeight: 700 }}>
-                  ▸ 원산지:
-                </span>{" "}
-                유플러스 FE팀
-              </div>
-              <div>
-                <span style={{ color: "#8a6d1f", fontWeight: 700 }}>
-                  ▸ 품질 보증:
-                </span>{" "}
-                평생 무상 A/S
-              </div>
-              <div>
-                <span style={{ color: "#8a6d1f", fontWeight: 700 }}>
-                  ▸ 주의사항:
-                </span>{" "}
-                어느 나라, 어느 팀에 가시더라도 merge conflict 없이 평탄하시길
-              </div>
-            </div>
-
-            <p style={{ marginBottom: "16px" }}>
-              부디 가시는 곳마다{" "}
-              <strong style={{ color: "#1a1a1a" }}>'Made in U+'</strong>의
-              자부심을 잃지 마시고, 이 팀에서 보여주신 그 든든함 그대로 세계를
-              정복하시길 바랍니다.
+              정식 승인하는 바입니다. 어디로 가시든{" "}
+              <strong style={{ color: "#1a1a1a" }}>merge conflict</strong> 없이
+              평탄하시길.
             </p>
             <p>이에 그 공로와 무한한 잠재력을 인정하여 이 상장을 수여합니다.</p>
           </div>
