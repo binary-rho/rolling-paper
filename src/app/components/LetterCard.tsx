@@ -16,7 +16,7 @@ export function LetterCard({ memoCount }: LetterCardProps) {
       style={{
         position: "relative",
         margin: "5vw auto 0",
-        width: "min(460px, 90vw)",
+        width: "min(520px, 92vw)",
         zIndex: 10,
         // 상장도 보드의 일부로 취급한다. 클릭을 막지 않아 상장 위에서도
         // 스티커를 붙이거나 편지를 남길 수 있다(클릭이 보드 캔버스로 통과).
