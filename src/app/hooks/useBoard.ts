@@ -35,6 +35,7 @@ type StickerRow = {
   x: number;
   y: number;
   rotation: number;
+  scale: number;
   session_id: string;
 };
 
@@ -88,6 +89,7 @@ const rowToSticker = (r: StickerRow): Sticker => ({
   x: r.x,
   y: r.y,
   rotation: r.rotation,
+  scale: r.scale ?? 1, // scale 컬럼이 없는 기존 행은 기본 1
   sessionId: r.session_id,
 });
 
@@ -98,6 +100,7 @@ const mergeSticker = (prev: Sticker, next: Sticker): Sticker => ({
   x: next.x ?? prev.x,
   y: next.y ?? prev.y,
   rotation: next.rotation ?? prev.rotation,
+  scale: next.scale ?? prev.scale,
   sessionId: next.sessionId ?? prev.sessionId,
 });
 
@@ -107,6 +110,7 @@ const stickerToRow = (s: Sticker): StickerRow => ({
   x: s.x,
   y: s.y,
   rotation: s.rotation,
+  scale: s.scale,
   session_id: s.sessionId,
 });
 
@@ -133,6 +137,7 @@ export interface UseBoardResult {
   deleteMemo: (id: string) => void;
   addSticker: (input: AddStickerInput) => void;
   moveSticker: (id: string, x: number, y: number) => void;
+  resizeSticker: (id: string, scale: number) => void;
   deleteSticker: (id: string) => void;
   stickerAssets: StickerAsset[];
   /** 업로드한 이미지를 카탈로그에 추가하고, 생성된 항목을 반환합니다. */
@@ -322,6 +327,7 @@ export function useBoard(sessionId: string, fallbackSeed: Memo[] = []): UseBoard
         id: uid(),
         ...input,
         rotation: randomRotation(STICKER_ROTATION_RANGE_DEG),
+        scale: 1,
         sessionId,
       };
       setStickers((prev) => [...prev, sticker]);
@@ -343,6 +349,17 @@ export function useBoard(sessionId: string, fallbackSeed: Memo[] = []): UseBoard
         .update({ x, y })
         .eq("id", id)
         .then(({ error }) => error && console.error("sticker move failed", error));
+    }
+  }, []);
+
+  const resizeSticker = useCallback((id: string, scale: number) => {
+    setStickers((prev) => prev.map((s) => (s.id === id ? { ...s, scale } : s)));
+    if (isSupabaseEnabled && supabase) {
+      supabase
+        .from("stickers")
+        .update({ scale })
+        .eq("id", id)
+        .then(({ error }) => error && console.error("sticker resize failed", error));
     }
   }, []);
 
@@ -383,6 +400,7 @@ export function useBoard(sessionId: string, fallbackSeed: Memo[] = []): UseBoard
     deleteMemo,
     addSticker,
     moveSticker,
+    resizeSticker,
     deleteSticker,
     stickerAssets,
     addStickerAsset,

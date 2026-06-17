@@ -34,6 +34,7 @@ export interface Sticker {
   x: number;
   y: number;
   rotation: number;
+  scale: number;
   sessionId: string;
 }
 
@@ -111,11 +112,19 @@ const EMOJI_STICKER_SIZE_PX = 32;
  * 아니면 이모지 텍스트를 렌더링합니다. size를 주면 그 크기로, 없으면
  * 등록된 이미지의 기본 크기 → 공통 이미지 크기 순으로 폴백합니다.
  */
-function StickerContent({ value, size }: { value: string; size?: number }) {
+function StickerContent({
+  value,
+  size,
+  scale = 1,
+}: {
+  value: string;
+  size?: number;
+  scale?: number;
+}) {
   if (isImageSticker(value)) {
     const registered = STICKER_IMAGES[value]; // 토큰이면 존재, 업로드 data URL이면 undefined
+    const px = (size ?? registered?.size ?? IMAGE_STICKER_SIZE_PX) * scale;
     const src = registered ? registered.src : value;
-    const px = size ?? registered?.size ?? IMAGE_STICKER_SIZE_PX;
     return (
       <img
         src={src}
@@ -131,7 +140,7 @@ function StickerContent({ value, size }: { value: string; size?: number }) {
       />
     );
   }
-  const px = size ?? EMOJI_STICKER_SIZE_PX;
+  const px = (size ?? EMOJI_STICKER_SIZE_PX) * scale;
   return <span style={{ fontSize: `${px}px`, lineHeight: 1 }}>{value}</span>;
 }
 
@@ -184,6 +193,18 @@ type StickerDragState = {
 /** 클릭과 드래그를 구분하는 최소 이동 거리(px). 이보다 작으면 클릭(삭제)으로 처리합니다. */
 const STICKER_DRAG_THRESHOLD_PX = 4;
 
+type StickerResizeState = {
+  stickerId: string;
+  startPageX: number;
+  startPageY: number;
+  origScale: number;
+};
+
+/** 스티커 크기 조절 한계와 민감도(드래그 픽셀당 scale 변화량 기준). */
+const STICKER_MIN_SCALE = 0.4;
+const STICKER_MAX_SCALE = 4;
+const STICKER_RESIZE_SENSITIVITY = 200; // 이 픽셀만큼 끌면 scale 1 변화
+
 export default function App() {
   const [sessionId] = useState(getSession);
   const {
@@ -194,6 +215,7 @@ export default function App() {
     deleteMemo,
     addSticker,
     moveSticker,
+    resizeSticker,
     deleteSticker,
     stickerAssets,
     addStickerAsset,
@@ -215,6 +237,9 @@ export default function App() {
     x: number;
     y: number;
   } | null>(null);
+  const [stickerResize, setStickerResize] =
+    useState<StickerResizeState | null>(null);
+  const [draggingScale, setDraggingScale] = useState<number | null>(null);
   const [canvasHeight, setCanvasHeight] = useState(CANVAS_HEIGHT);
   const canvasRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -361,6 +386,59 @@ export default function App() {
         startPageY: e.pageY,
         origX: sticker.x,
         origY: sticker.y,
+      });
+    },
+    [stickers],
+  );
+
+  // Mouse move & up for resizing stickers (모서리 핸들 드래그)
+  useEffect(() => {
+    if (!stickerResize) return;
+
+    const handleMove = (e: MouseEvent) => {
+      // 오른쪽 아래로 끌면 커지고, 왼쪽 위로 끌면 작아진다.
+      const delta =
+        (e.pageX - stickerResize.startPageX + e.pageY - stickerResize.startPageY) /
+        STICKER_RESIZE_SENSITIVITY;
+      const next = Math.max(
+        STICKER_MIN_SCALE,
+        Math.min(STICKER_MAX_SCALE, stickerResize.origScale + delta),
+      );
+      setDraggingScale(next);
+    };
+
+    const handleUp = () => {
+      if (draggingScale != null) {
+        resizeSticker(stickerResize.stickerId, draggingScale);
+      }
+      setStickerResize(null);
+      setDraggingScale(null);
+      // 리사이즈 직후 발생하는 보드 클릭(편지쓰기 모달)을 무시한다.
+      wasDragging.current = true;
+      setTimeout(() => {
+        wasDragging.current = false;
+      }, 50);
+    };
+
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
+    };
+  }, [stickerResize, draggingScale, resizeSticker]);
+
+  const handleStickerResizeStart = useCallback(
+    (stickerId: string, e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation(); // 위치 드래그와 분리
+      const sticker = stickers.find((s) => s.id === stickerId);
+      if (!sticker) return;
+      setStickerResize({
+        stickerId,
+        startPageX: e.pageX,
+        startPageY: e.pageY,
+        origScale: sticker.scale ?? 1,
       });
     },
     [stickers],
@@ -611,11 +689,17 @@ export default function App() {
         {stickers.map((sticker) => {
           const isOwn = sticker.sessionId === sessionId;
           const isThisDragging = stickerDrag?.stickerId === sticker.id;
+          const isThisResizing = stickerResize?.stickerId === sticker.id;
           // 드래그 중인 동안에는 임시 좌표로 따라오게 합니다.
           const pos =
             isThisDragging && draggingStickerPos
               ? draggingStickerPos
               : { x: sticker.x, y: sticker.y };
+          // 리사이즈 중에는 임시 scale로 즉시 반영합니다.
+          const scale =
+            isThisResizing && draggingScale != null
+              ? draggingScale
+              : sticker.scale ?? 1;
           // 이미지 스티커(말풍선 등)는 기울이지 않고 똑바로 붙입니다.
           const rotation = isImageSticker(sticker.emoji) ? 0 : sticker.rotation;
           return (
@@ -632,13 +716,14 @@ export default function App() {
                 top: `${(pos.y / 100) * canvasHeight}px`,
                 transform: `rotate(${rotation}deg)`,
                 lineHeight: 1,
-                zIndex: isThisDragging ? 30 : 8,
+                // 스티커는 메모(편지)보다 위에 떠서 꾸밀 수 있게 한다.
+                zIndex: isThisDragging || isThisResizing ? 1200 : 1000,
                 cursor: isThisDragging ? "grabbing" : "grab",
                 userSelect: "none",
                 pointerEvents: "auto",
               }}
             >
-              <StickerContent value={sticker.emoji} />
+              <StickerContent value={sticker.emoji} scale={scale} />
               {isOwn && (
                 <button
                   data-export-hide
@@ -670,6 +755,29 @@ export default function App() {
                   <X size={11} color="#FFF" strokeWidth={3} />
                 </button>
               )}
+
+              {/* 크기 조절 핸들 — 우하단, 드래그로 확대/축소 (누구나) */}
+              <span
+                data-export-hide
+                onMouseDown={(e) => handleStickerResizeStart(sticker.id, e)}
+                title="드래그해서 크기 조절"
+                style={{
+                  position: "absolute",
+                  bottom: "0px",
+                  right: "0px",
+                  width: "11px",
+                  height: "11px",
+                  borderRadius: "50%",
+                  background: "#E6007E",
+                  border: "1.5px solid #FFF",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                  opacity: isThisResizing ? 1 : 0,
+                  transition: "opacity 0.15s",
+                  cursor: "nwse-resize",
+                  zIndex: 2,
+                }}
+                className="sticker-resize-btn"
+              />
             </div>
           );
         })}
