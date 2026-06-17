@@ -99,8 +99,9 @@ const STICKER_OPTIONS = [
 /** 사용자가 업로드한 이미지는 base64 data URL로 저장됩니다. */
 const DATA_URL_PREFIX = "data:image/";
 
-const isImageSticker = (value: string) =>
-  value.startsWith(IMAGE_STICKER_PREFIX) || value.startsWith(DATA_URL_PREFIX);
+const isImageSticker = (value: string | undefined | null): value is string =>
+  typeof value === "string" &&
+  (value.startsWith(IMAGE_STICKER_PREFIX) || value.startsWith(DATA_URL_PREFIX));
 
 /** 보드에 표시되는 이모지 스티커 기본 크기(px). */
 const EMOJI_STICKER_SIZE_PX = 32;
