@@ -15,8 +15,9 @@
   cursor: grabbing;
 }
 
-/* 스티커에 마우스를 올렸을 때만 삭제(×) 버튼 노출 */
-.group:hover .sticker-delete-btn {
+/* 스티커에 마우스를 올렸을 때만 삭제(×)·크기조절 핸들 노출 */
+.group:hover .sticker-delete-btn,
+.group:hover .sticker-resize-btn {
   opacity: 1 !important;
 }
 

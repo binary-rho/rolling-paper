@@ -24,9 +24,14 @@ create table if not exists public.stickers (
   x           double precision not null default 50,
   y           double precision not null default 50,
   rotation    double precision not null default 0,
+  scale       double precision not null default 1,
   session_id  text,
   created_at  timestamptz not null default now()
 );
+
+-- 이미 만들어진 stickers 테이블에도 크기(scale) 컬럼을 더한다(기존 행은 1로 채워짐).
+alter table public.stickers
+  add column if not exists scale double precision not null default 1;
 
 -- 사용자가 업로드해 모두가 공유하는 이미지 스티커 카탈로그 (base64 data URL 저장)
 create table if not exists public.sticker_assets (
