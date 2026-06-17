@@ -87,44 +87,44 @@ interface Milestone {
 const MILESTONES: Milestone[] = [
   {
     year: "2022",
-    title: "우리 팀, 한자리에",
-    description: "다 함께 모여 남긴 단체사진. 이때부터 한 팀이었어요.",
+    title: "닷컴의 출범",
+    description: "FE, BE 모두가 한 팀으로 시작",
     image: "/2022-groupphoto.jpeg",
   },
   {
     year: "2022",
     title: "다 같이 회식",
-    description: "고생한 서로를 다독이며 함께한 따뜻한 저녁.",
+    description: "첫 고비를 넘기고 다 같이 모인 저녁",
     image: "/2022-dinner.jpeg",
   },
   {
     year: "2023",
-    title: "Ignite",
-    description: "새로운 도전 앞에서 함께 불을 지핀 순간.",
+    title: "팀 소개 시간",
+    description: "서로를 처음 제대로 알아간 자리",
     image: "/2023-ignite.jpeg",
   },
   {
     year: "2023",
     title: "해커톤",
-    description: "밤새 머리를 맞대고 만들어낸 우리만의 결과물.",
-    image: "/2023-hackaton.jpeg",
-  },
-  {
-    year: "2023",
-    title: "해커톤, 그 열기",
-    description: "치열했던 만큼 더 끈끈해진 우리 팀.",
+    description: "멘토로 참가하신 형윤님!",
     image: "/2023-hackaton2.jpeg",
   },
   {
     year: "2023",
+    title: "해커톤, 그 열기",
+    description: "빔새 몰입했던 현장",
+    image: "/2023-hackaton.jpeg",
+  },
+  {
+    year: "2023",
     title: "워크샵",
-    description: "일에서 한 걸음 물러나 서로를 알아간 시간.",
+    description: "일에서 한 걸음 물러나 서로를 알아간 시간",
     image: "/2023-workshop.jpeg",
   },
   {
     year: "2023",
-    title: "카페에서",
-    description: "잠깐의 여유, 그치만 오래 기억에 남을 한 컷.",
+    title: "한우 오마카세",
+    description: "처음이자 마지막으로 함께 즐긴 오마카세 😊",
     image: "/2023-cafe.jpeg",
   },
   {
@@ -135,8 +135,8 @@ const MILESTONES: Milestone[] = [
   },
   {
     year: "2024",
-    title: "마당 출연",
-    description: "간편결제 개발자로 TV 출연.",
+    title: "2024 개발자 대표로 LGCC 출연!",
+    description: "<MZ 고객 1000% 취향저격 '유플닷컴'> 동영상을 참고해주세요 😉",
     image: "/2024-10.png",
   },
   {
@@ -148,19 +148,19 @@ const MILESTONES: Milestone[] = [
   {
     year: "2025",
     title: "타운홀",
-    description: "함께 방향을 맞추고 미래를 그렸던 자리.",
+    description: "함께 방향을 맞추고 미래를 그렸던 자리",
     image: "/2025-townhall.jpg",
   },
   {
     year: "2025",
     title: "다시, 회식",
-    description: "변함없이 즐거웠던 우리 팀의 저녁.",
+    description: "회식 중에도 배포하는 이진님을 지켜보며..",
     image: "/2025-dinner.jpeg",
   },
   {
     year: "2026",
     title: "워크샵",
-    description: "또 한 번 함께 떠나 채운 소중한 추억.",
+    description: "또 한 번 함께 떠나 채운 소중한 추억",
     image: "/2026-workshop.jpeg",
   },
   {
@@ -172,7 +172,7 @@ const MILESTONES: Milestone[] = [
   {
     year: "2026",
     title: "워크샵, 마지막까지",
-    description: "끝까지 함께해 준 모두에게 고마운 시간.",
+    description: "끝까지 함께한 모두",
     image: "/2026-workshop3.jpeg",
   },
 ];
