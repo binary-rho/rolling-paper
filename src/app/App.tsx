@@ -8,6 +8,7 @@ import { WriteMemoModal } from "./components/WriteMemoModal";
 import { FilterPopup } from "./components/FilterPopup";
 import { AchievementCarousel } from "./components/AchievementCarousel";
 import { SiteFooter } from "./components/SiteFooter";
+import { IntroEnvelope } from "./components/IntroEnvelope";
 import { useBoard } from "./hooks/useBoard";
 import { exportRollingPaperPdf } from "../lib/exportPdf";
 
@@ -113,6 +114,23 @@ function getSession() {
   return id;
 }
 
+/** 인트로(상장 공개 연출)를 이미 봤는지. 첫 방문에만 보여준다. */
+const INTRO_SEEN_KEY = "rp_intro_seen";
+function shouldShowIntro() {
+  try {
+    return !localStorage.getItem(INTRO_SEEN_KEY);
+  } catch {
+    return false;
+  }
+}
+function markIntroSeen() {
+  try {
+    localStorage.setItem(INTRO_SEEN_KEY, "1");
+  } catch {
+    /* 저장 실패는 무시 */
+  }
+}
+
 type DragState = {
   memoId: string;
   startPageX: number;
@@ -144,6 +162,7 @@ export default function App() {
     moveSticker,
     deleteSticker,
   } = useBoard(sessionId);
+  const [introOpen, setIntroOpen] = useState(shouldShowIntro);
   const [modalOpen, setModalOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [stickerPanelOpen, setStickerPanelOpen] = useState(false);
@@ -325,6 +344,21 @@ export default function App() {
     contentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
+  const closeIntro = useCallback(() => {
+    setIntroOpen(false);
+    markIntroSeen();
+  }, []);
+
+  // 인트로가 열려 있는 동안에는 배경 스크롤을 막는다.
+  useEffect(() => {
+    if (!introOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [introOpen]);
+
   const [exporting, setExporting] = useState(false);
   const handleExportPdf = useCallback(async () => {
     if (exporting) return;
@@ -350,6 +384,36 @@ export default function App() {
         position: "relative",
       }}
     >
+      {/* Intro spotlight overlay — 첫 방문에만. 클릭하면 본화면으로 전환된다. */}
+      <AnimatePresence>
+        {introOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6, ease: "easeInOut" }}
+            onClick={closeIntro}
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 55,
+              background:
+                "radial-gradient(circle at 50% 45%, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.85) 60%, rgba(0,0,0,0.92) 100%)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <IntroEnvelope
+              to="박형윤 팀장님께"
+              memoCount={memos.length}
+              onEnter={closeIntro}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Board — one big canvas: place letters & stickers anywhere */}
       <div
         ref={canvasRef}
@@ -406,8 +470,27 @@ export default function App() {
           </svg>
         </div>
 
-        {/* Main letter — centered */}
-        <LetterCard memoCount={memos.length} />
+        {/* Main letter — centered.
+            인트로(봉투) 동안에는 숨겼다가, 입장하면 펼쳐지듯 등장한다. */}
+        <motion.div
+          initial={false}
+          animate={
+            introOpen
+              ? { opacity: 0, scaleY: 0.15, y: -30 }
+              : { opacity: 1, scaleY: 1, y: 0 }
+          }
+          transition={{
+            duration: 0.75,
+            ease: [0.16, 1, 0.3, 1],
+            opacity: { duration: 0.5 },
+          }}
+          style={{
+            transformOrigin: "top center",
+            pointerEvents: introOpen ? "none" : "auto",
+          }}
+        >
+          <LetterCard memoCount={memos.length} />
+        </motion.div>
 
         {/* Scroll-down button (wrapper lets clicks pass through to the board) */}
         <div
