@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Filter, Sticker, ChevronDown, X, Download } from "lucide-react";
+import { Filter, Sticker, ChevronDown, X, Download, Plus } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import { LetterCard } from "./components/LetterCard";
 import { MemoCard } from "./components/MemoCard";
@@ -11,6 +11,7 @@ import { SiteFooter } from "./components/SiteFooter";
 import { IntroEnvelope } from "./components/IntroEnvelope";
 import { useBoard } from "./hooks/useBoard";
 import { exportRollingPaperPdf } from "../lib/exportPdf";
+import { fileToStickerDataUrl } from "../lib/stickerImage";
 
 export type NoteColor = "yellow" | "pink" | "mint" | "sky" | "lavender";
 
@@ -41,14 +42,16 @@ const BOARD_TOP_SPACE = "clamp(72px, 9vh, 120px)";
 const BOARD_BOTTOM_SPACE = "1600px";
 
 /**
- * 보드 배경: 은은한 파스텔 그라데이션 + 도트 그리드.
- * 그라데이션이 위쪽 모서리에서 브랜드 핑크빛을 아주 옅게 풀어주고,
- * 도트는 그 위에 가벼운 질감을 더합니다. (메모·상장을 가리지 않도록 모두 매우 연하게)
+ * 보드 배경: 파스텔 그라데이션 + 도트(피그잼 느낌의 땡땡이).
+ * 모두 매우 연하게 깔아 메모·상장을 가리지 않습니다.
  */
 const BOARD_DOT_PATTERN =
-  "radial-gradient(circle, rgba(230,0,126,0.05) 1px, transparent 1px)";
+  "radial-gradient(circle, rgba(230,0,126,0.16) 1.4px, transparent 1.4px)";
 const BOARD_GRADIENT =
   "linear-gradient(180deg, #FFFFFF 0%, #FFF6FB 60%, #FDEFF7 100%)";
+
+/** 배경 도트 간격. */
+const BOARD_DOT_SIZE = "36px 36px";
 
 /** 배경 LG U+ 워드마크 윤곽선 색 — 메모를 가리지 않게 아주 연한 핑크. */
 const WORDMARK_STROKE = "rgba(230,0,126, 0.5)";
@@ -58,10 +61,16 @@ const WORDMARK_STROKE = "rgba(230,0,126, 0.5)";
  */
 const IMAGE_STICKER_PREFIX = "img:";
 
+/**
+ * 이미지 스티커 공통 크기(px). 라이언과 사용자가 업로드한 이미지가 이 크기를 공유합니다.
+ * 이 숫자 하나만 바꾸면 보드에 붙는 이미지 스티커 크기가 일괄로 조절됩니다.
+ */
+const IMAGE_STICKER_SIZE_PX = 48;
+
 /** 이미지 스티커 토큰 → public 경로 + 보드 표시 크기(px) 매핑. */
 const STICKER_IMAGES: Record<string, { src: string; size: number }> = {
-  "img:lion": { src: "/lion.png", size: 48 },
-  "img:balloon": { src: "/balloon.png", size: 240 },
+  "img:lion": { src: "/lion.png", size: IMAGE_STICKER_SIZE_PX },
+  "img:balloon": { src: "/balloon.png", size: 240 }, // 말풍선만 예외로 크게
 };
 
 const STICKER_OPTIONS = [
@@ -87,23 +96,28 @@ const STICKER_OPTIONS = [
   "💫",
 ];
 
+/** 사용자가 업로드한 이미지는 base64 data URL로 저장됩니다. */
+const DATA_URL_PREFIX = "data:image/";
+
 const isImageSticker = (value: string) =>
-  value.startsWith(IMAGE_STICKER_PREFIX);
+  value.startsWith(IMAGE_STICKER_PREFIX) || value.startsWith(DATA_URL_PREFIX);
 
 /** 보드에 표시되는 이모지 스티커 기본 크기(px). */
 const EMOJI_STICKER_SIZE_PX = 32;
 
 /**
- * 스티커가 이미지 토큰이면 <img>, 아니면 이모지 텍스트를 렌더링합니다.
- * size를 주면 그 크기로, 없으면 이미지별 기본 크기(STICKER_IMAGES.size)를 씁니다.
+ * 스티커가 이미지(미리 정의된 토큰 또는 업로드한 data URL)면 <img>,
+ * 아니면 이모지 텍스트를 렌더링합니다. size를 주면 그 크기로, 없으면
+ * 등록된 이미지의 기본 크기 → 공통 이미지 크기 순으로 폴백합니다.
  */
 function StickerContent({ value, size }: { value: string; size?: number }) {
   if (isImageSticker(value)) {
-    const image = STICKER_IMAGES[value];
-    const px = size ?? image.size;
+    const registered = STICKER_IMAGES[value]; // 토큰이면 존재, 업로드 data URL이면 undefined
+    const src = registered ? registered.src : value;
+    const px = size ?? registered?.size ?? IMAGE_STICKER_SIZE_PX;
     return (
       <img
-        src={image.src}
+        src={src}
         alt="스티커"
         draggable={false}
         style={{
@@ -180,12 +194,13 @@ export default function App() {
     addSticker,
     moveSticker,
     deleteSticker,
+    stickerAssets,
+    addStickerAsset,
   } = useBoard(sessionId);
   const [introOpen, setIntroOpen] = useState(shouldShowIntro);
   const [modalOpen, setModalOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [stickerPanelOpen, setStickerPanelOpen] = useState(false);
-  const [selectedSticker, setSelectedSticker] = useState<string | null>(null);
   const [pendingPos, setPendingPos] = useState<{ x: number; y: number }>({
     x: 50,
     y: 50,
@@ -204,6 +219,25 @@ export default function App() {
   const contentRef = useRef<HTMLDivElement>(null);
   const wasDragging = useRef(false);
   const stickerWasDragging = useRef(false);
+  const stickerFileInputRef = useRef<HTMLInputElement>(null);
+
+  // 업로드한 이미지를 정사각 data URL로 변환해 공유 스티커 목록에 추가합니다.
+  // 추가된 스티커는 패널에서 골라 보드 가운데에 붙일 수 있습니다.
+  const handleStickerFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = ""; // 같은 파일을 다시 골라도 onChange가 발생하도록 초기화
+      if (!file) return;
+      try {
+        const dataUrl = await fileToStickerDataUrl(file);
+        addStickerAsset(dataUrl);
+        toast.success("스티커가 목록에 추가됐어요 — 골라서 붙여보세요!");
+      } catch {
+        toast.error("이미지를 불러오지 못했어요. 다른 파일로 시도해 주세요.");
+      }
+    },
+    [addStickerAsset],
+  );
 
   // Keep memo/sticker coordinates accurate as the board height changes
   useEffect(() => {
@@ -331,26 +365,26 @@ export default function App() {
     [stickers],
   );
 
+  // 현재 화면(viewport) 한가운데가 보드 좌표계에서 몇 %인지 계산합니다.
+  // 메모·스티커를 "항상 화면 가운데"에 추가할 때 사용합니다.
+  const viewportCenterOnBoard = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 50, y: 50 };
+    const rect = canvas.getBoundingClientRect();
+    const x = ((window.innerWidth / 2 - rect.left) / canvas.offsetWidth) * 100;
+    const y = ((window.innerHeight / 2 - rect.top) / canvas.offsetHeight) * 100;
+    return {
+      x: Math.max(2, Math.min(90, x)),
+      y: Math.max(2, Math.min(96, y)),
+    };
+  }, []);
+
+  // 보드 빈 곳을 클릭하면 메모 쓰기를 엽니다. 위치는 항상 화면 가운데로 통일합니다.
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return;
     if (wasDragging.current) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const canvasRect = canvas.getBoundingClientRect();
-    const canvasTop = canvasRect.top + window.scrollY;
-    const x = ((e.pageX - canvasRect.left) / canvas.offsetWidth) * 100;
-    const y = ((e.pageY - canvasTop) / canvas.offsetHeight) * 100;
-
-    if (selectedSticker) {
-      addSticker({ emoji: selectedSticker, x, y });
-      setSelectedSticker(null);
-    } else {
-      setPendingPos({
-        x: Math.max(2, Math.min(84, x)),
-        y: Math.max(2, Math.min(94, y)),
-      });
-      setModalOpen(true);
-    }
+    setPendingPos(viewportCenterOnBoard());
+    setModalOpen(true);
   };
 
   const handleAddMemo = useCallback(
@@ -394,7 +428,9 @@ export default function App() {
       toast.success("rollingpaper.pdf 저장 완료!", { id: toastId });
     } catch (err) {
       console.error("PDF export failed", err);
-      toast.error("PDF 저장에 실패했어요. 다시 시도해 주세요.", { id: toastId });
+      toast.error("PDF 저장에 실패했어요. 다시 시도해 주세요.", {
+        id: toastId,
+      });
     } finally {
       setExporting(false);
     }
@@ -448,9 +484,9 @@ export default function App() {
           position: "relative",
           width: "100%",
           paddingTop: BOARD_TOP_SPACE,
-          cursor: selectedSticker ? "crosshair" : "default",
+          cursor: "default",
           backgroundImage: `${BOARD_DOT_PATTERN}, ${BOARD_GRADIENT}`,
-          backgroundSize: "24px 24px, 100% 100%",
+          backgroundSize: `${BOARD_DOT_SIZE}, 100% 100%`,
           overflow: "hidden",
         }}
       >
@@ -585,10 +621,8 @@ export default function App() {
             <div
               key={sticker.id}
               onMouseDown={(e) => {
-                // 스티커를 붙이는 모드가 아닐 때만, 자기 스티커를 드래그합니다.
-                if (isOwn && !selectedSticker) {
-                  handleStickerDragStart(sticker.id, e);
-                }
+                // 누구나 스티커 위치를 옮길 수 있습니다(삭제는 자기 것만).
+                handleStickerDragStart(sticker.id, e);
               }}
               className="group"
               style={{
@@ -598,18 +632,13 @@ export default function App() {
                 transform: `rotate(${rotation}deg)`,
                 lineHeight: 1,
                 zIndex: isThisDragging ? 30 : 8,
-                cursor:
-                  isOwn && !selectedSticker
-                    ? isThisDragging
-                      ? "grabbing"
-                      : "grab"
-                    : "default",
+                cursor: isThisDragging ? "grabbing" : "grab",
                 userSelect: "none",
                 pointerEvents: "auto",
               }}
             >
               <StickerContent value={sticker.emoji} />
-              {isOwn && !selectedSticker && (
+              {isOwn && (
                 <button
                   data-export-hide
                   onClick={(e) => {
@@ -674,6 +703,58 @@ export default function App() {
       {/* Footer */}
       <SiteFooter />
 
+      {/* PDF export — bottom left, separated from the action buttons */}
+      <div
+        data-export-hide
+        style={{
+          position: "fixed",
+          bottom: "28px",
+          left: "28px",
+          zIndex: 50,
+        }}
+      >
+        <span className="tooltip-wrap">
+          <span className="tooltip-label">PDF로 편지 저장</span>
+          <motion.button
+            whileHover={{ scale: exporting ? 1 : 1.06 }}
+            whileTap={{ scale: exporting ? 1 : 0.94 }}
+            onClick={handleExportPdf}
+            disabled={exporting}
+            style={{
+              width: "48px",
+              height: "48px",
+              borderRadius: "50%",
+              background: "#FFFFFF",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: exporting ? "default" : "pointer",
+              border: "none",
+              boxShadow:
+                "0 4px 16px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)",
+              opacity: exporting ? 0.55 : 1,
+              transition: "opacity 0.2s",
+            }}
+          >
+            {exporting ? (
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
+                style={{
+                  width: "18px",
+                  height: "18px",
+                  borderRadius: "50%",
+                  border: "2px solid rgba(0,0,0,0.15)",
+                  borderTopColor: "#1A1A1A",
+                }}
+              />
+            ) : (
+              <Download size={18} color="#1A1A1A" />
+            )}
+          </motion.button>
+        </span>
+      </div>
+
       {/* Floating UI buttons — bottom right */}
       <div
         data-export-hide
@@ -711,43 +792,84 @@ export default function App() {
                 style={{
                   gridColumn: "1 / -1",
                   fontSize: "11px",
-                  color: selectedSticker ? "#E6007E" : "#AAA",
+                  color: "#AAA",
                   fontFamily: "'Noto Sans KR', sans-serif",
                   marginBottom: "4px",
-                  fontWeight: selectedSticker ? 700 : 400,
                 }}
               >
-                {selectedSticker
-                  ? "선택됨 — 보드에 클릭해서 붙이기"
-                  : "스티커를 골라 보드에 붙이세요"}
+                스티커를 고르면 화면 가운데에 붙어요
               </p>
-              {STICKER_OPTIONS.map((emoji) => (
+              {[
+                ...STICKER_OPTIONS,
+                ...stickerAssets.map((a) => a.dataUrl),
+              ].map((emoji, i) => (
                 <button
-                  key={emoji}
-                  onClick={() =>
-                    setSelectedSticker(selectedSticker === emoji ? null : emoji)
-                  }
+                  key={`${i}-${emoji.slice(0, 24)}`}
+                  onClick={() => {
+                    // 고르는 즉시 화면 가운데에 붙이고, 이후 드래그로 옮깁니다.
+                    const center = viewportCenterOnBoard();
+                    addSticker({ emoji, x: center.x, y: center.y });
+                    setStickerPanelOpen(false);
+                  }}
                   style={{
                     width: "100%",
                     aspectRatio: "1 / 1",
                     borderRadius: "8px",
-                    background:
-                      selectedSticker === emoji
-                        ? "rgba(230,0,126,0.1)"
-                        : "#F5F5F5",
-                    border: `1.5px solid ${selectedSticker === emoji ? "#E6007E" : "transparent"}`,
+                    background: "#F5F5F5",
+                    border: "1.5px solid transparent",
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     transition: "all 0.15s",
-                    transform:
-                      selectedSticker === emoji ? "scale(1.15)" : "scale(1)",
                   }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.transform = "scale(1.15)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.transform = "scale(1)")
+                  }
                 >
                   <StickerContent value={emoji} size={20} />
                 </button>
               ))}
+
+              {/* 직접 이미지 첨부해 스티커 추가 */}
+              <button
+                onClick={() => stickerFileInputRef.current?.click()}
+                title="이미지 첨부해서 스티커 추가"
+                style={{
+                  width: "100%",
+                  aspectRatio: "1 / 1",
+                  borderRadius: "8px",
+                  background: "transparent",
+                  border: "1.5px dashed #CCC",
+                  color: "#AAA",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "#E6007E";
+                  e.currentTarget.style.color = "#E6007E";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "#CCC";
+                  e.currentTarget.style.color = "#AAA";
+                }}
+              >
+                <Plus size={18} />
+              </button>
+
+              <input
+                ref={stickerFileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleStickerFileChange}
+                style={{ display: "none" }}
+              />
             </motion.div>
           )}
         </AnimatePresence>
@@ -760,107 +882,68 @@ export default function App() {
             alignItems: "center",
           }}
         >
-          {/* PDF export button */}
-          <motion.button
-            whileHover={{ scale: exporting ? 1 : 1.06 }}
-            whileTap={{ scale: exporting ? 1 : 0.94 }}
-            onClick={handleExportPdf}
-            disabled={exporting}
-            style={{
-              width: "48px",
-              height: "48px",
-              borderRadius: "50%",
-              background: "#FFFFFF",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: exporting ? "default" : "pointer",
-              border: "none",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)",
-              opacity: exporting ? 0.55 : 1,
-              transition: "opacity 0.2s",
-            }}
-            title="PDF로 저장"
-          >
-            {exporting ? (
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
-                style={{
-                  width: "18px",
-                  height: "18px",
-                  borderRadius: "50%",
-                  border: "2px solid rgba(0,0,0,0.15)",
-                  borderTopColor: "#1A1A1A",
-                }}
-              />
-            ) : (
-              <Download size={18} color="#1A1A1A" />
-            )}
-          </motion.button>
-
           {/* Filter button */}
-          <motion.button
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.94 }}
-            onClick={() => setFilterOpen(true)}
-            style={{
-              width: "48px",
-              height: "48px",
-              borderRadius: "50%",
-              background: "#1A1A1A",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              border: "none",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
-            }}
-            title="메모 보기"
-          >
-            <Filter size={18} color="#FFF" />
-          </motion.button>
+          <span className="tooltip-wrap">
+            <span className="tooltip-label">메모 보기</span>
+            <motion.button
+              whileHover={{ scale: 1.06 }}
+              whileTap={{ scale: 0.94 }}
+              onClick={() => setFilterOpen(true)}
+              style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "50%",
+                background: "#1A1A1A",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                border: "none",
+                boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+              }}
+            >
+              <Filter size={18} color="#FFF" />
+            </motion.button>
+          </span>
 
           {/* Sticker button */}
-          <motion.button
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.94 }}
-            onClick={() => {
-              setStickerPanelOpen(!stickerPanelOpen);
-              setSelectedSticker(null);
-            }}
-            style={{
-              width: "48px",
-              height: "48px",
-              borderRadius: "50%",
-              background: stickerPanelOpen ? "#E6007E" : "#FFFFFF",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              border: "none",
-              boxShadow: stickerPanelOpen
-                ? "0 4px 20px rgba(230,0,126,0.45)"
-                : "0 4px 16px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)",
-              transition: "all 0.2s",
-            }}
-            title="스티커 붙이기"
-          >
-            <Sticker
-              size={20}
-              color={stickerPanelOpen ? "#FFFFFF" : "#1A1A1A"}
-            />
-          </motion.button>
+          <span className="tooltip-wrap">
+            <span className="tooltip-label">스티커 붙이기</span>
+            <motion.button
+              whileHover={{ scale: 1.06 }}
+              whileTap={{ scale: 0.94 }}
+              onClick={() => {
+                setStickerPanelOpen(!stickerPanelOpen);
+              }}
+              style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "50%",
+                background: stickerPanelOpen ? "#E6007E" : "#FFFFFF",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                border: "none",
+                boxShadow: stickerPanelOpen
+                  ? "0 4px 20px rgba(230,0,126,0.45)"
+                  : "0 4px 16px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)",
+                transition: "all 0.2s",
+              }}
+            >
+              <Sticker
+                size={20}
+                color={stickerPanelOpen ? "#FFFFFF" : "#1A1A1A"}
+              />
+            </motion.button>
+          </span>
 
           {/* Write button */}
           <motion.button
             whileHover={{ scale: 1.06 }}
             whileTap={{ scale: 0.94 }}
             onClick={() => {
-              setPendingPos({
-                x: 10 + Math.random() * 70,
-                y: 10 + Math.random() * 70,
-              });
+              setPendingPos(viewportCenterOnBoard());
               setModalOpen(true);
             }}
             style={{

@@ -28,15 +28,25 @@ create table if not exists public.stickers (
   created_at  timestamptz not null default now()
 );
 
+-- 사용자가 업로드해 모두가 공유하는 이미지 스티커 카탈로그 (base64 data URL 저장)
+create table if not exists public.sticker_assets (
+  id          text primary key,
+  data_url    text        not null,
+  session_id  text,
+  created_at  timestamptz not null default now()
+);
+
 -- ────────────────────────────────────────────────
 -- 2. RLS (공개 롤링페이퍼 → 익명 사용자 모두 읽기/쓰기 허용)
 --    더 엄격히 가려면 정책을 조정하세요.
 -- ────────────────────────────────────────────────
-alter table public.memos    enable row level security;
-alter table public.stickers enable row level security;
+alter table public.memos          enable row level security;
+alter table public.stickers       enable row level security;
+alter table public.sticker_assets enable row level security;
 
-drop policy if exists "memos public access"    on public.memos;
-drop policy if exists "stickers public access" on public.stickers;
+drop policy if exists "memos public access"          on public.memos;
+drop policy if exists "stickers public access"       on public.stickers;
+drop policy if exists "sticker_assets public access" on public.sticker_assets;
 
 create policy "memos public access"
   on public.memos
@@ -50,8 +60,28 @@ create policy "stickers public access"
   using (true)
   with check (true);
 
+create policy "sticker_assets public access"
+  on public.sticker_assets
+  for all
+  using (true)
+  with check (true);
+
 -- ────────────────────────────────────────────────
 -- 3. Realtime (실시간 동기화) 활성화
 -- ────────────────────────────────────────────────
-alter publication supabase_realtime add table public.memos;
-alter publication supabase_realtime add table public.stickers;
+-- 이미 추가된 테이블을 다시 add 하면 에러가 나므로, 중복은 무시합니다.
+do $$
+begin
+  begin
+    alter publication supabase_realtime add table public.memos;
+  exception when duplicate_object then null;
+  end;
+  begin
+    alter publication supabase_realtime add table public.stickers;
+  exception when duplicate_object then null;
+  end;
+  begin
+    alter publication supabase_realtime add table public.sticker_assets;
+  exception when duplicate_object then null;
+  end;
+end $$;
