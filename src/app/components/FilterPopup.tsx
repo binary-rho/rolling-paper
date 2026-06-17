@@ -114,7 +114,8 @@ export function FilterPopup({ open, onClose, memos }: FilterPopupProps) {
               <div>
                 <p
                   style={{
-                    fontFamily: "'Noto Sans KR', sans-serif",
+                    fontFamily: "'Montserrat', sans-serif",
+                    fontWeight: 900,
                     fontSize: "11px",
                     color: "#E6007E",
                     letterSpacing: "0.18em",
