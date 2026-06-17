@@ -38,19 +38,34 @@ export interface Sticker {
 
 const CANVAS_HEIGHT = 1000;
 const BOARD_TOP_SPACE = "clamp(72px, 9vh, 120px)";
-const BOARD_BOTTOM_SPACE = "min(72vh, 680px)";
+const BOARD_BOTTOM_SPACE = "1600px";
+
+/**
+ * 보드 배경: 은은한 파스텔 그라데이션 + 도트 그리드.
+ * 그라데이션이 위쪽 모서리에서 브랜드 핑크빛을 아주 옅게 풀어주고,
+ * 도트는 그 위에 가벼운 질감을 더합니다. (메모·상장을 가리지 않도록 모두 매우 연하게)
+ */
+const BOARD_DOT_PATTERN =
+  "radial-gradient(circle, rgba(230,0,126,0.05) 1px, transparent 1px)";
+const BOARD_GRADIENT =
+  "linear-gradient(180deg, #FFFFFF 0%, #FFF6FB 60%, #FDEFF7 100%)";
+
+/** 배경 LG U+ 워드마크 윤곽선 색 — 메모를 가리지 않게 아주 연한 핑크. */
+const WORDMARK_STROKE = "rgba(230,0,126, 0.5)";
 /**
  * 이미지 스티커 토큰은 `img:` 접두사로 식별합니다. 이모지와 한 필드(`emoji`)에
  * 함께 저장되므로, DB 스키마를 바꾸지 않고 이미지 스티커를 표현할 수 있습니다.
  */
 const IMAGE_STICKER_PREFIX = "img:";
 
-/** 이미지 스티커 토큰 → public 경로 매핑. */
-const STICKER_IMAGES: Record<string, string> = {
-  "img:lion": "/lion.png",
+/** 이미지 스티커 토큰 → public 경로 + 보드 표시 크기(px) 매핑. */
+const STICKER_IMAGES: Record<string, { src: string; size: number }> = {
+  "img:lion": { src: "/lion.png", size: 48 },
+  "img:balloon": { src: "/balloon.png", size: 240 },
 };
 
 const STICKER_OPTIONS = [
+  "img:balloon",
   "img:lion",
   "🎉",
   "🌟",
@@ -72,19 +87,23 @@ const STICKER_OPTIONS = [
   "💫",
 ];
 
-const isImageSticker = (value: string) => value.startsWith(IMAGE_STICKER_PREFIX);
+const isImageSticker = (value: string) =>
+  value.startsWith(IMAGE_STICKER_PREFIX);
 
-/** 보드에 표시되는 스티커 크기(px). 이미지가 이모지보다 약간 큽니다. */
+/** 보드에 표시되는 이모지 스티커 기본 크기(px). */
 const EMOJI_STICKER_SIZE_PX = 32;
-const IMAGE_STICKER_SIZE_PX = 48;
 
-/** 스티커가 이미지 토큰이면 <img>, 아니면 이모지 텍스트를 렌더링합니다. */
+/**
+ * 스티커가 이미지 토큰이면 <img>, 아니면 이모지 텍스트를 렌더링합니다.
+ * size를 주면 그 크기로, 없으면 이미지별 기본 크기(STICKER_IMAGES.size)를 씁니다.
+ */
 function StickerContent({ value, size }: { value: string; size?: number }) {
   if (isImageSticker(value)) {
-    const px = size ?? IMAGE_STICKER_SIZE_PX;
+    const image = STICKER_IMAGES[value];
+    const px = size ?? image.size;
     return (
       <img
-        src={STICKER_IMAGES[value]}
+        src={image.src}
         alt="스티커"
         draggable={false}
         style={{
@@ -255,8 +274,10 @@ export default function App() {
     const handleMove = (e: MouseEvent) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      const dx = ((e.pageX - stickerDrag.startPageX) / canvas.offsetWidth) * 100;
-      const dy = ((e.pageY - stickerDrag.startPageY) / canvas.offsetHeight) * 100;
+      const dx =
+        ((e.pageX - stickerDrag.startPageX) / canvas.offsetWidth) * 100;
+      const dy =
+        ((e.pageY - stickerDrag.startPageY) / canvas.offsetHeight) * 100;
       const movedPx =
         Math.abs(e.pageX - stickerDrag.startPageX) +
         Math.abs(e.pageY - stickerDrag.startPageY);
@@ -271,7 +292,11 @@ export default function App() {
 
     const handleUp = () => {
       if (stickerWasDragging.current && draggingStickerPos) {
-        moveSticker(stickerDrag.stickerId, draggingStickerPos.x, draggingStickerPos.y);
+        moveSticker(
+          stickerDrag.stickerId,
+          draggingStickerPos.x,
+          draggingStickerPos.y,
+        );
       }
       setStickerDrag(null);
       setDraggingStickerPos(null);
@@ -423,10 +448,9 @@ export default function App() {
           position: "relative",
           width: "100%",
           paddingTop: BOARD_TOP_SPACE,
-          cursor: selectedSticker ? "crosshair" : "cell",
-          backgroundImage:
-            "radial-gradient(circle, rgba(0,0,0,0.04) 1px, transparent 1px)",
-          backgroundSize: "24px 24px",
+          cursor: selectedSticker ? "crosshair" : "default",
+          backgroundImage: `${BOARD_DOT_PATTERN}, ${BOARD_GRADIENT}`,
+          backgroundSize: "24px 24px, 100% 100%",
           overflow: "hidden",
         }}
       >
@@ -447,7 +471,7 @@ export default function App() {
             style={{
               display: "block",
               width: "100%",
-              height: "520px",
+              height: "550px",
             }}
           >
             <text
@@ -461,8 +485,8 @@ export default function App() {
               fontWeight={900}
               fontSize="26"
               fill="none"
-              stroke="#E6007E"
-              strokeWidth={3}
+              stroke={WORDMARK_STROKE}
+              strokeWidth={5}
               vectorEffect="non-scaling-stroke"
             >
               LG U+
@@ -548,6 +572,8 @@ export default function App() {
             isThisDragging && draggingStickerPos
               ? draggingStickerPos
               : { x: sticker.x, y: sticker.y };
+          // 이미지 스티커(말풍선 등)는 기울이지 않고 똑바로 붙입니다.
+          const rotation = isImageSticker(sticker.emoji) ? 0 : sticker.rotation;
           return (
             <div
               key={sticker.id}
@@ -562,14 +588,15 @@ export default function App() {
                 position: "absolute",
                 left: `${pos.x}%`,
                 top: `${(pos.y / 100) * canvasHeight}px`,
-                transform: `rotate(${sticker.rotation}deg)`,
+                transform: `rotate(${rotation}deg)`,
                 lineHeight: 1,
                 zIndex: isThisDragging ? 30 : 8,
-                cursor: isOwn && !selectedSticker
-                  ? isThisDragging
-                    ? "grabbing"
-                    : "grab"
-                  : "default",
+                cursor:
+                  isOwn && !selectedSticker
+                    ? isThisDragging
+                      ? "grabbing"
+                      : "grab"
+                    : "default",
                 userSelect: "none",
                 pointerEvents: "auto",
               }}
