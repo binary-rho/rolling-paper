@@ -490,7 +490,7 @@ export default function App() {
           overflow: "hidden",
         }}
       >
-        <div
+        {/* <div
           style={{
             position: "absolute",
             top: "-36px",
@@ -528,7 +528,7 @@ export default function App() {
               LG U+
             </text>
           </svg>
-        </div>
+        </div> */}
 
         {/* Main letter — centered.
             인트로(봉투) 동안에는 반으로 접혀 숨어 있다가,
@@ -799,40 +799,39 @@ export default function App() {
               >
                 스티커를 고르면 화면 가운데에 붙어요
               </p>
-              {[
-                ...STICKER_OPTIONS,
-                ...stickerAssets.map((a) => a.dataUrl),
-              ].map((emoji, i) => (
-                <button
-                  key={`${i}-${emoji.slice(0, 24)}`}
-                  onClick={() => {
-                    // 고르는 즉시 화면 가운데에 붙이고, 이후 드래그로 옮깁니다.
-                    const center = viewportCenterOnBoard();
-                    addSticker({ emoji, x: center.x, y: center.y });
-                    setStickerPanelOpen(false);
-                  }}
-                  style={{
-                    width: "100%",
-                    aspectRatio: "1 / 1",
-                    borderRadius: "8px",
-                    background: "#F5F5F5",
-                    border: "1.5px solid transparent",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "all 0.15s",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.transform = "scale(1.15)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.transform = "scale(1)")
-                  }
-                >
-                  <StickerContent value={emoji} size={20} />
-                </button>
-              ))}
+              {[...STICKER_OPTIONS, ...stickerAssets.map((a) => a.dataUrl)].map(
+                (emoji, i) => (
+                  <button
+                    key={`${i}-${emoji.slice(0, 24)}`}
+                    onClick={() => {
+                      // 고르는 즉시 화면 가운데에 붙이고, 이후 드래그로 옮깁니다.
+                      const center = viewportCenterOnBoard();
+                      addSticker({ emoji, x: center.x, y: center.y });
+                      setStickerPanelOpen(false);
+                    }}
+                    style={{
+                      width: "100%",
+                      aspectRatio: "1 / 1",
+                      borderRadius: "8px",
+                      background: "#F5F5F5",
+                      border: "1.5px solid transparent",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 0.15s",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.transform = "scale(1.15)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.transform = "scale(1)")
+                    }
+                  >
+                    <StickerContent value={emoji} size={20} />
+                  </button>
+                ),
+              )}
 
               {/* 직접 이미지 첨부해 스티커 추가 */}
               <button
