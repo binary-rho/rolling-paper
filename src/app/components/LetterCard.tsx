@@ -16,12 +16,13 @@ export function LetterCard({ memoCount }: LetterCardProps) {
       style={{
         position: "relative",
         margin: "5vw auto 0",
-        width: "min(420px, 88vw)",
+        width: "min(460px, 90vw)",
         zIndex: 10,
-        pointerEvents: "auto",
+        // 상장도 보드의 일부로 취급한다. 클릭을 막지 않아 상장 위에서도
+        // 스티커를 붙이거나 편지를 남길 수 있다(클릭이 보드 캔버스로 통과).
+        pointerEvents: "none",
         cursor: "default",
       }}
-      onClick={(e) => e.stopPropagation()}
     >
       {/* Outer gold frame */}
       <div
@@ -45,7 +46,7 @@ export function LetterCard({ memoCount }: LetterCardProps) {
             outlineOffset: "3px",
             borderRadius: "3px",
             padding:
-              "clamp(28px, 6vw, 48px) clamp(22px, 5vw, 40px) clamp(26px, 5vw, 40px)",
+              "clamp(28px, 6vw, 48px) clamp(26px, 5.5vw, 44px) clamp(26px, 5vw, 40px)",
             overflow: "hidden",
           }}
         >
@@ -168,19 +169,19 @@ export function LetterCard({ memoCount }: LetterCardProps) {
             }}
           >
             <p style={{ marginBottom: "16px" }}>
-              위 사람은 유플러스 FE팀 팀장으로 재직하는 동안, 단 한 줄의 버그도
-              그냥 넘기지 않는 깐깐함과 어떤 무리한 요구 앞에서도{" "}
+              위 사람은 유플러스 FE팀 팀장으로 재직하는 동안, 어떤 무리한 요구
+              앞에서도{" "}
               <strong style={{ color: "#1a1a1a" }}>"네, 됩니다"</strong>를
               외치는 든든함으로 랩 전체를 지탱해 왔습니다.
             </p>
             <p style={{ marginBottom: "16px" }}>
+              이에 그 공로와 무한한 잠재력을 인정하여 이 상장을 수여합니다.
+            </p>
+            <p>
               그 실력이 국내 수요를 한참 초과한 나머지, 이에 부득이하게 글로벌
               시장으로의 <strong style={{ color: "#1a1a1a" }}>'수출'</strong>을
-              정식 승인하는 바입니다. 어디로 가시든{" "}
-              <strong style={{ color: "#1a1a1a" }}>merge conflict</strong> 없이
-              평탄하시길.
+              정식 승인하는 바입니다.
             </p>
-            <p>이에 그 공로와 무한한 잠재력을 인정하여 이 상장을 수여합니다.</p>
           </div>
 
           {/* Gold divider */}

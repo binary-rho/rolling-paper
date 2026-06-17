@@ -11,6 +11,7 @@ interface IntroEnvelopeProps {
 
 const serif = "'Nanum Myeongjo', 'Noto Serif KR', serif";
 const GOLD = "#c9a227";
+const PAPER = "#fffdf7";
 
 /**
  * 첫 방문 인트로에서 화면 중앙에 띄우는 "편지 봉투" 카드.
@@ -21,26 +22,35 @@ export function IntroEnvelope({ to, memoCount, onEnter }: IntroEnvelopeProps) {
     <motion.button
       type="button"
       onClick={onEnter}
-      initial={{ opacity: 0, y: 16, scale: 0.96 }}
+      initial={{ opacity: 0, y: 18, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      whileHover={{ y: -4 }}
+      whileHover={{ y: -5, scale: 1.015 }}
       style={{
         position: "relative",
-        width: "min(340px, 82vw)",
+        width: "min(690px, 92vw)",
         aspectRatio: "3 / 2",
         border: "none",
         padding: 0,
         cursor: "pointer",
-        background: "linear-gradient(180deg, #fffdf7 0%, #fbf3df 100%)",
-        borderRadius: "8px",
+        background: `linear-gradient(180deg, ${PAPER} 0%, #fbf1d9 100%)`,
+        borderRadius: "12px",
         boxShadow:
-          "0 0 60px rgba(255,235,180,0.35), 0 24px 60px rgba(0,0,0,0.45)",
-        outline: `1px solid ${GOLD}`,
-        outlineOffset: "-6px",
+          "0 0 90px rgba(255,235,180,0.4), 0 36px 80px rgba(0,0,0,0.5)",
         overflow: "hidden",
       }}
     >
+      {/* 안쪽 점선 스티치 테두리 */}
+      <div
+        style={{
+          position: "absolute",
+          inset: "14px",
+          border: `1px dashed rgba(201,162,39,0.55)`,
+          borderRadius: "8px",
+          pointerEvents: "none",
+        }}
+      />
+
       {/* 봉투 뚜껑(삼각형) */}
       <div
         style={{
@@ -49,49 +59,59 @@ export function IntroEnvelope({ to, memoCount, onEnter }: IntroEnvelopeProps) {
           left: 0,
           width: 0,
           height: 0,
-          borderLeft: "min(170px, 41vw) solid transparent",
-          borderRight: "min(170px, 41vw) solid transparent",
-          borderTop: "min(113px, 27vw) solid rgba(201,162,39,0.18)",
+          borderLeft: "min(345px, 46vw) solid transparent",
+          borderRight: "min(345px, 46vw) solid transparent",
+          borderTop: "min(230px, 30vw) solid rgba(201,162,39,0.16)",
         }}
       />
-      {/* 뚜껑 가장자리 라인 */}
+      {/* 뚜껑 좌/우 사선 라인 */}
       <div
         style={{
           position: "absolute",
-          top: 0,
-          left: "50%",
-          width: "1px",
-          height: "min(113px, 27vw)",
-          background: GOLD,
-          opacity: 0.35,
-          transform: "translateX(-0.5px)",
+          inset: 0,
+          pointerEvents: "none",
+          background:
+            "linear-gradient(to bottom right, transparent calc(50% - 0.5px), rgba(201,162,39,0.3) 50%, transparent calc(50% + 0.5px)) no-repeat",
+          backgroundSize: "50% 66%",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background:
+            "linear-gradient(to bottom left, transparent calc(50% - 0.5px), rgba(201,162,39,0.3) 50%, transparent calc(50% + 0.5px)) no-repeat",
+          backgroundSize: "50% 66%",
+          backgroundPosition: "right top",
         }}
       />
 
-      {/* 가운데 왁스 씰 느낌의 원형 배지 */}
+      {/* 가운데 왁스 씰 */}
       <div
         style={{
           position: "absolute",
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          width: "60px",
-          height: "60px",
+          width: "110px",
+          height: "110px",
           borderRadius: "50%",
           background:
             "radial-gradient(circle at 35% 30%, #e2bf57 0%, #c9a227 55%, #a9851b 100%)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          boxShadow: "0 4px 10px rgba(0,0,0,0.25)",
+          boxShadow:
+            "0 8px 18px rgba(0,0,0,0.28), inset 0 0 0 4px rgba(255,253,247,0.25)",
         }}
       >
         <span
           style={{
             fontFamily: serif,
             fontWeight: 800,
-            fontSize: "18px",
-            color: "#fffdf7",
+            fontSize: "32px",
+            color: PAPER,
             letterSpacing: "0.02em",
           }}
         >
@@ -105,18 +125,18 @@ export function IntroEnvelope({ to, memoCount, onEnter }: IntroEnvelopeProps) {
           position: "absolute",
           left: 0,
           right: 0,
-          bottom: "16px",
+          bottom: "30px",
           textAlign: "center",
         }}
       >
         <p
           style={{
             fontFamily: serif,
-            fontSize: "14px",
+            fontSize: "22px",
             fontWeight: 700,
             color: "#3a2f12",
-            letterSpacing: "0.04em",
-            marginBottom: "4px",
+            letterSpacing: "0.05em",
+            marginBottom: "7px",
           }}
         >
           {to}
@@ -124,7 +144,7 @@ export function IntroEnvelope({ to, memoCount, onEnter }: IntroEnvelopeProps) {
         <p
           style={{
             fontFamily: "'Noto Sans KR', sans-serif",
-            fontSize: "11px",
+            fontSize: "14px",
             color: "#9a8541",
             letterSpacing: "0.03em",
           }}
