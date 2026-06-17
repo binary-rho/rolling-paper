@@ -91,6 +91,16 @@ const rowToSticker = (r: StickerRow): Sticker => ({
   sessionId: r.session_id,
 });
 
+/** realtime UPDATE 병합: 새 row의 빈 값(undefined/null)은 기존 값을 유지한다. */
+const mergeSticker = (prev: Sticker, next: Sticker): Sticker => ({
+  id: next.id ?? prev.id,
+  emoji: next.emoji ?? prev.emoji,
+  x: next.x ?? prev.x,
+  y: next.y ?? prev.y,
+  rotation: next.rotation ?? prev.rotation,
+  sessionId: next.sessionId ?? prev.sessionId,
+});
+
 const stickerToRow = (s: Sticker): StickerRow => ({
   id: s.id,
   emoji: s.emoji,
@@ -219,7 +229,9 @@ export function useBoard(sessionId: string, fallbackSeed: Memo[] = []): UseBoard
           const sticker = rowToSticker(payload.new as StickerRow);
           setStickers((prev) =>
             prev.some((s) => s.id === sticker.id)
-              ? prev.map((s) => (s.id === sticker.id ? sticker : s))
+              ? // UPDATE payload에 일부 컬럼만 올 수 있으므로 기존 값과 병합하되,
+                // 값이 비어있는(undefined/null) 필드는 기존 값을 유지한다(emoji 보존).
+                prev.map((s) => (s.id === sticker.id ? mergeSticker(s, sticker) : s))
               : [...prev, sticker]
           );
         }

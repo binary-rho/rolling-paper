@@ -58,7 +58,7 @@ export function LetterCard({ memoCount }: LetterCardProps) {
               { bottom: 10, right: 10, rotate: 180 },
               { bottom: 10, left: 10, rotate: 270 },
             ] as const
-          ).map((pos, i) => (
+          ).map(({ rotate, ...pos }, i) => (
             <div
               key={i}
               style={{
@@ -67,9 +67,9 @@ export function LetterCard({ memoCount }: LetterCardProps) {
                 height: "26px",
                 borderTop: "2px solid #c9a227",
                 borderLeft: "2px solid #c9a227",
-                transform: `rotate(${pos.rotate}deg)`,
                 opacity: 0.7,
                 ...pos,
+                transform: `rotate(${rotate}deg)`,
               }}
             />
           ))}
