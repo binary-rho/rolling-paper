@@ -124,7 +124,7 @@ export function AchievementCarousel() {
     <section
       style={{
         width: "100%",
-        background: "#FFFFFF",
+        background: "transparent",
         padding: "64px 0 88px",
       }}
     >
