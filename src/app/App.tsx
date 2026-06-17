@@ -495,26 +495,33 @@ export default function App() {
         </div>
 
         {/* Main letter — centered.
-            인트로(봉투) 동안에는 숨겼다가, 입장하면 펼쳐지듯 등장한다. */}
-        <motion.div
-          initial={false}
-          animate={
-            introOpen
-              ? { opacity: 0, scaleY: 0.15, y: -30 }
-              : { opacity: 1, scaleY: 1, y: 0 }
-          }
-          transition={{
-            duration: 0.75,
-            ease: [0.16, 1, 0.3, 1],
-            opacity: { duration: 0.5 },
-          }}
-          style={{
-            transformOrigin: "top center",
-            pointerEvents: introOpen ? "none" : "auto",
-          }}
-        >
-          <LetterCard memoCount={memos.length} />
-        </motion.div>
+            인트로(봉투) 동안에는 반으로 접혀 숨어 있다가,
+            입장하면 위에서 아래로 펴지듯(반으로 접힌 종이가 펼쳐지듯) 등장한다. */}
+        <div style={{ perspective: "1400px", pointerEvents: "none" }}>
+          <motion.div
+            initial={false}
+            animate={
+              introOpen
+                ? { opacity: 0, scaleY: 0.5, rotateX: -82 }
+                : { opacity: 1, scaleY: 1, rotateX: 0 }
+            }
+            transition={{
+              duration: 0.85,
+              ease: [0.16, 1, 0.3, 1],
+              opacity: { duration: 0.45 },
+            }}
+            style={{
+              transformOrigin: "top center",
+              transformStyle: "preserve-3d",
+              // 래퍼는 항상 클릭을 통과시키고, 상장 카드(LetterCard)만 클릭을 받는다.
+              // (LetterCard 자체가 pointerEvents:auto를 가짐) → 상장 주변 빈 공간
+              // 클릭이 보드 캔버스로 전달되어 스티커를 붙일 수 있다.
+              pointerEvents: "none",
+            }}
+          >
+            <LetterCard memoCount={memos.length} />
+          </motion.div>
+        </div>
 
         {/* Scroll-down button (wrapper lets clicks pass through to the board) */}
         <div
