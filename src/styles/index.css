@@ -19,3 +19,33 @@
 .group:hover .sticker-delete-btn {
   opacity: 1 !important;
 }
+
+/* 하단 액션 버튼 hover 툴팁 */
+.tooltip-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.tooltip-label {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: rgba(26, 26, 26, 0.92);
+  color: #fff;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 60;
+}
+
+.tooltip-wrap:hover .tooltip-label {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
