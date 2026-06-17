@@ -134,6 +134,18 @@ const MILESTONES: Milestone[] = [
     image: "/2024-moono.jpeg",
   },
   {
+    year: "2024",
+    title: "마당 출연",
+    description: "간편결제 개발자로 TV 출연.",
+    image: "/2024-10.png",
+  },
+  {
+    year: "2025",
+    title: "디지털고객경험지수 2년 연속 1위",
+    description: "LG유플러스의 값진 성과, 그 뒤엔 팀장님의 손길이 있었습니다.",
+    image: "/2025-first.png",
+  },
+  {
     year: "2025",
     title: "타운홀",
     description: "함께 방향을 맞추고 미래를 그렸던 자리.",
