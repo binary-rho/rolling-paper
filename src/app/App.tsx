@@ -46,7 +46,20 @@ export interface Sticker {
 
 const CANVAS_HEIGHT = 1000;
 const BOARD_TOP_SPACE = "clamp(72px, 9vh, 120px)";
-const BOARD_BOTTOM_SPACE = "1600px";
+
+/**
+ * 메모를 놓을 보드 하단 빈 공간(px). 메모가 많아지면 자동으로 늘어난다.
+ * 기본 여백 + 메모 수 × 1장당 여유. 너무 무한정 늘지 않게 상한을 둔다.
+ */
+const BOARD_BOTTOM_BASE_PX = 1000;
+const BOARD_BOTTOM_PER_MEMO_PX = 90;
+const BOARD_BOTTOM_MAX_PX = 8000;
+function boardBottomSpacePx(memoCount: number): number {
+  return Math.min(
+    BOARD_BOTTOM_MAX_PX,
+    BOARD_BOTTOM_BASE_PX + memoCount * BOARD_BOTTOM_PER_MEMO_PX,
+  );
+}
 
 /**
  * 보드 배경: 파스텔 그라데이션 + 도트(피그잼 느낌의 땡땡이).
@@ -746,9 +759,12 @@ export default function App() {
           <AchievementCarousel />
         </div>
 
-        {/* Open space below so letters have room to land */}
+        {/* Open space below so letters have room to land — 메모가 많을수록 넓어진다 */}
         <div
-          style={{ height: BOARD_BOTTOM_SPACE, pointerEvents: "none" }}
+          style={{
+            height: `${boardBottomSpacePx(memos.length)}px`,
+            pointerEvents: "none",
+          }}
           aria-hidden
         />
 
