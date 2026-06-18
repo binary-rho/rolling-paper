@@ -1,4 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  useRef,
+} from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Filter, Sticker, ChevronDown, X, Download, Plus } from "lucide-react";
 import { Toaster, toast } from "sonner";
@@ -193,6 +199,19 @@ type StickerDragState = {
 /** 클릭과 드래그를 구분하는 최소 이동 거리(px). 이보다 작으면 클릭(삭제)으로 처리합니다. */
 const STICKER_DRAG_THRESHOLD_PX = 4;
 
+/**
+ * 보드 요소 z-index 체계. 오버레이(인트로 봉투 55 / 필터 80 / 모달 100)보다
+ * 항상 아래에 있도록, 메모·스티커는 50 이하 구간으로 가둔다.
+ *  - 메모: 20 ~ MEMO_Z_MAX(45), 드래그 시 MEMO_DRAG_Z(48)
+ *  - 스티커: STICKER_Z(50) — 메모 위, 드래그/리사이즈 시 STICKER_ACTIVE_Z(52)
+ */
+const MEMO_Z_BASE = 20;
+const MEMO_Z_MAX = 45;
+const MEMO_DRAG_Z = 48;
+const STICKER_Z = 50;
+const STICKER_TOP_Z = 53; // 마지막으로 만진 스티커(인트로 봉투 55보다는 아래)
+const STICKER_ACTIVE_Z = 54; // 드래그·리사이즈 중
+
 type StickerResizeState = {
   stickerId: string;
   startPageX: number;
@@ -240,6 +259,8 @@ export default function App() {
   const [stickerResize, setStickerResize] =
     useState<StickerResizeState | null>(null);
   const [draggingScale, setDraggingScale] = useState<number | null>(null);
+  // 마지막으로 만진 스티커 — 다른 스티커들 위로 올려준다.
+  const [topStickerId, setTopStickerId] = useState<string | null>(null);
   const [canvasHeight, setCanvasHeight] = useState(CANVAS_HEIGHT);
   const canvasRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -485,11 +506,15 @@ export default function App() {
   const closeIntro = useCallback(() => {
     setIntroOpen(false);
     markIntroSeen();
+    // 봉투를 열 때 페이지 최상단으로 올려 상장이 화면 가운데 보이게 한다.
+    window.scrollTo({ top: 0, behavior: "auto" });
   }, []);
 
-  // 인트로가 열려 있는 동안에는 배경 스크롤을 막는다.
-  useEffect(() => {
+  // 인트로가 열려 있는 동안에는 최상단에서 배경 스크롤을 막는다.
+  // useLayoutEffect로 페인트 전에 최상단으로 올려 봉투가 튀는 현상을 막는다.
+  useLayoutEffect(() => {
     if (!introOpen) return;
+    window.scrollTo({ top: 0, behavior: "auto" });
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
@@ -610,24 +635,23 @@ export default function App() {
         </div> */}
 
         {/* Main letter — centered.
-            인트로(봉투) 동안에는 반으로 접혀 숨어 있다가,
-            입장하면 위에서 아래로 펴지듯(반으로 접힌 종이가 펼쳐지듯) 등장한다. */}
-        <div style={{ perspective: "1400px", pointerEvents: "none" }}>
+            인트로(봉투) 동안에는 아래에 작게 숨어 있다가, 입장하면
+            봉투에서 편지지가 빠져나오듯 아래에서 위로 슬쩍 올라오며 등장한다. */}
+        <div style={{ pointerEvents: "none" }}>
           <motion.div
             initial={false}
             animate={
               introOpen
-                ? { opacity: 0, scaleY: 0.5, rotateX: -82 }
-                : { opacity: 1, scaleY: 1, rotateX: 0 }
+                ? { opacity: 0, y: 80, scale: 0.82 }
+                : { opacity: 1, y: 0, scale: 1 }
             }
             transition={{
-              duration: 0.85,
+              duration: 0.7,
               ease: [0.16, 1, 0.3, 1],
-              opacity: { duration: 0.45 },
+              opacity: { duration: 0.5 },
             }}
             style={{
-              transformOrigin: "top center",
-              transformStyle: "preserve-3d",
+              transformOrigin: "center bottom",
               // 래퍼는 항상 클릭을 통과시키고, 상장 카드(LetterCard)만 클릭을 받는다.
               // (LetterCard 자체가 pointerEvents:auto를 가짐) → 상장 주변 빈 공간
               // 클릭이 보드 캔버스로 전달되어 스티커를 붙일 수 있다.
@@ -706,6 +730,8 @@ export default function App() {
             <div
               key={sticker.id}
               onMouseDown={(e) => {
+                // 마지막으로 만진 스티커를 맨 위로 올린다.
+                setTopStickerId(sticker.id);
                 // 누구나 스티커 위치를 옮길 수 있습니다(삭제는 자기 것만).
                 handleStickerDragStart(sticker.id, e);
               }}
@@ -717,7 +743,14 @@ export default function App() {
                 transform: `rotate(${rotation}deg)`,
                 lineHeight: 1,
                 // 스티커는 메모(편지)보다 위에 떠서 꾸밀 수 있게 한다.
-                zIndex: isThisDragging || isThisResizing ? 1200 : 1000,
+                // 단, 인트로 봉투(55)·필터(80)·모달(100) 같은 오버레이보다는 아래.
+                // 드래그/리사이즈 중 > 마지막으로 만진 것 > 기본 순으로 쌓인다.
+                zIndex:
+                  isThisDragging || isThisResizing
+                    ? STICKER_ACTIVE_Z
+                    : topStickerId === sticker.id
+                      ? STICKER_TOP_Z
+                      : STICKER_Z,
                 cursor: isThisDragging ? "grabbing" : "grab",
                 userSelect: "none",
                 pointerEvents: "auto",
@@ -759,7 +792,10 @@ export default function App() {
               {/* 크기 조절 핸들 — 우하단, 드래그로 확대/축소 (누구나) */}
               <span
                 data-export-hide
-                onMouseDown={(e) => handleStickerResizeStart(sticker.id, e)}
+                onMouseDown={(e) => {
+                  setTopStickerId(sticker.id);
+                  handleStickerResizeStart(sticker.id, e);
+                }}
                 title="드래그해서 크기 조절"
                 style={{
                   position: "absolute",
@@ -785,6 +821,11 @@ export default function App() {
         {/* Memos */}
         {memos.map((memo, index) => {
           const pos = draggingMemos[memo.id] ?? { x: memo.x, y: memo.y };
+          // 메모가 많아도 스티커(50)·오버레이를 침범하지 않도록 상한을 둔다.
+          const memoZ =
+            dragging?.memoId === memo.id
+              ? MEMO_DRAG_Z
+              : Math.min(MEMO_Z_BASE + index, MEMO_Z_MAX);
           return (
             <div
               key={memo.id}
@@ -792,7 +833,7 @@ export default function App() {
                 position: "absolute",
                 left: `${pos.x}%`,
                 top: `${(pos.y / 100) * canvasHeight}px`,
-                zIndex: dragging?.memoId === memo.id ? 200 : 20 + index,
+                zIndex: memoZ,
                 pointerEvents: "auto",
               }}
             >
@@ -802,7 +843,7 @@ export default function App() {
                 onDelete={deleteMemo}
                 onDragStart={handleDragStart}
                 isDragging={dragging?.memoId === memo.id}
-                zIndex={dragging?.memoId === memo.id ? 200 : 20 + index}
+                zIndex={memoZ}
               />
             </div>
           );
