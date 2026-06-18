@@ -1,6 +1,7 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { motion } from "motion/react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { ImageLightbox } from "./ImageLightbox";
 
 const PLACEHOLDER_BG = "linear-gradient(135deg, #F2F2F2 0%, #E7E7E7 100%)";
 const EDGE_PADDING = "clamp(16px, 3vw, 28px)";
@@ -179,6 +180,8 @@ const MILESTONES: Milestone[] = [
 
 export function AchievementCarousel() {
   const { trackRef, trackHandlers } = useDragScroll();
+  // 확대해서 보고 있는 사진. null이면 닫힌 상태입니다.
+  const [zoomed, setZoomed] = useState<Milestone | null>(null);
 
   return (
     <section
@@ -245,6 +248,7 @@ export function AchievementCarousel() {
           >
             {/* Visual area — drop a real photo via `image` */}
             <div
+              onClick={() => milestone.image && setZoomed(milestone)}
               style={{
                 position: "relative",
                 width: "100%",
@@ -253,6 +257,7 @@ export function AchievementCarousel() {
                 overflow: "hidden",
                 background: PLACEHOLDER_BG,
                 border: "1px solid rgba(0,0,0,0.05)",
+                cursor: milestone.image ? "zoom-in" : "default",
               }}
             >
               {milestone.image && (
@@ -323,6 +328,16 @@ export function AchievementCarousel() {
           </motion.article>
         ))}
       </div>
+
+      {/* 확대 보기(라이트박스) — 사진 클릭 시 화면 가운데에 크게 띄웁니다.
+          배경 클릭·닫기 버튼·ESC로 닫는 동작은 ImageLightbox가 담당합니다. */}
+      <ImageLightbox
+        src={zoomed?.image ?? null}
+        alt={zoomed?.title}
+        eyebrow={zoomed?.year}
+        caption={zoomed?.title}
+        onClose={() => setZoomed(null)}
+      />
     </section>
   );
 }
