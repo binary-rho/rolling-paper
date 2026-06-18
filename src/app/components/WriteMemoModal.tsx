@@ -416,7 +416,7 @@ export function WriteMemoModal({
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       placeholder="형윤님께 전하고 싶은 마음을 담아보세요"
-                      maxLength={200}
+                      maxLength={500}
                       rows={4}
                       style={{
                         background: "#F5F5F5",
@@ -446,7 +446,7 @@ export function WriteMemoModal({
                         fontFamily: "'Noto Sans KR', sans-serif",
                       }}
                     >
-                      {message.length} / 200
+                      {message.length} / 500
                     </p>
                   </div>
                 </div>
