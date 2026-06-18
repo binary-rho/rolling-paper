@@ -217,8 +217,9 @@ const STICKER_DRAG_THRESHOLD_PX = 4;
  *  - 스티커: STICKER_Z(50) — 메모 위, 드래그/리사이즈 시 STICKER_ACTIVE_Z(52)
  */
 const MEMO_Z_BASE = 20;
-const MEMO_Z_MAX = 45;
-const MEMO_DRAG_Z = 48;
+const MEMO_Z_MAX = 44;
+const MEMO_TOP_Z = 46; // 마지막으로 만진 메모
+const MEMO_DRAG_Z = 48; // 드래그 중인 메모
 const STICKER_Z = 50;
 const STICKER_TOP_Z = 53; // 마지막으로 만진 스티커(인트로 봉투 55보다는 아래)
 const STICKER_ACTIVE_Z = 54; // 드래그·리사이즈 중
@@ -272,6 +273,8 @@ export default function App() {
   const [draggingScale, setDraggingScale] = useState<number | null>(null);
   // 마지막으로 만진 스티커 — 다른 스티커들 위로 올려준다.
   const [topStickerId, setTopStickerId] = useState<string | null>(null);
+  // 마지막으로 만진 메모 — 다른 메모들 위로 올려준다.
+  const [topMemoId, setTopMemoId] = useState<string | null>(null);
   const [canvasHeight, setCanvasHeight] = useState(CANVAS_HEIGHT);
   const canvasRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -348,6 +351,8 @@ export default function App() {
       e.preventDefault();
       const memo = memos.find((m) => m.id === memoId);
       if (!memo) return;
+      // 마지막으로 만진 메모를 맨 위로 올린다(클릭만 해도 적용).
+      setTopMemoId(memoId);
       setDragging({
         memoId,
         startPageX: e.pageX,
@@ -859,11 +864,16 @@ export default function App() {
         {/* Memos */}
         {memos.map((memo, index) => {
           const pos = draggingMemos[memo.id] ?? { x: memo.x, y: memo.y };
-          // 메모가 많아도 스티커(50)·오버레이를 침범하지 않도록 상한을 둔다.
-          const memoZ =
-            dragging?.memoId === memo.id
-              ? MEMO_DRAG_Z
-              : Math.min(MEMO_Z_BASE + index, MEMO_Z_MAX);
+          // 우선순위: 드래그 중 > 마지막으로 만진 메모 > 최신순(최신이 위).
+          // memos는 최신이 index 0이므로 (MAX - index)로 최신일수록 높게 둔다.
+          let memoZ: number;
+          if (dragging?.memoId === memo.id) {
+            memoZ = MEMO_DRAG_Z;
+          } else if (topMemoId === memo.id) {
+            memoZ = MEMO_TOP_Z;
+          } else {
+            memoZ = Math.max(MEMO_Z_BASE, MEMO_Z_MAX - index);
+          }
           return (
             <div
               key={memo.id}
