@@ -259,7 +259,16 @@ export function AchievementCarousel() {
                 <ImageWithFallback
                   src={milestone.image}
                   alt={milestone.title}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  draggable={false}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    // 이미지를 잡고 끌어도 네이티브 이미지 드래그 대신
+                    // 캐러셀 트랙 스크롤이 동작하도록 한다.
+                    pointerEvents: "none",
+                    userSelect: "none",
+                  }}
                 />
               )}
               {!milestone.image && (
