@@ -62,9 +62,8 @@ function boardBottomSpacePx(memoCount: number): number {
 }
 
 /**
- * 보드 배경: 파스텔 그라데이션 + 도트(피그잼 느낌의 땡땡이).
- * 도트는 색이 다른 두 레이어(진한 분홍 / 연한 분홍)를 겹쳐서,
- * 위(진한 분홍) → 아래(연한 분홍)로 색만 옅어지고 도트 자체는 끝까지 보입니다.
+ * 보드 배경: 파스텔 그라데이션 + 단일 도트(피그잼 느낌의 땡땡이).
+ * mask 그라데이션은 긴 보드에서 스크롤 성능을 해쳐 쓰지 않는다.
  */
 const BOARD_GRADIENT =
   "linear-gradient(180deg, #FFFFFF 0%, #FFF6FB 60%, #FDEFF7 100%)";
@@ -72,17 +71,9 @@ const BOARD_GRADIENT =
 /** 배경 도트 간격. */
 const BOARD_DOT_SIZE = "36px 36px";
 
-/** 진한 분홍 도트 — 위쪽에서 진하고 아래로 갈수록 사라짐. */
-const BOARD_DOT_STRONG =
-  "radial-gradient(circle, rgba(230,0,126,0.42) 1.4px, transparent 1.4px)";
-const BOARD_DOT_STRONG_MASK =
-  "linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%)";
-
-/** 연한 분홍 도트 — 위쪽에서 옅고 아래로 갈수록 진해짐(진한 도트가 사라진 자리를 채움). */
+/** 배경 도트 패턴(단일). */
 const BOARD_DOT_SOFT =
-  "radial-gradient(circle, rgba(230,0,126,0.12) 1.4px, transparent 1.4px)";
-const BOARD_DOT_SOFT_MASK =
-  "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 100%)";
+  "radial-gradient(circle, rgba(230,0,126,0.18) 1.4px, transparent 1.4px)";
 
 /** 배경 LG U+ 워드마크 윤곽선 색 — 메모를 가리지 않게 아주 연한 핑크. */
 const WORDMARK_STROKE = "rgba(230,0,126, 0.5)";
@@ -622,21 +613,7 @@ export default function App() {
           overflow: "hidden",
         }}
       >
-        {/* 도트 레이어 — 진한 분홍(위) + 연한 분홍(아래)을 겹쳐
-            위→아래로 색만 옅어지고 도트는 끝까지 보이게 한다. */}
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            inset: 0,
-            zIndex: 0,
-            pointerEvents: "none",
-            backgroundImage: BOARD_DOT_STRONG,
-            backgroundSize: BOARD_DOT_SIZE,
-            WebkitMaskImage: BOARD_DOT_STRONG_MASK,
-            maskImage: BOARD_DOT_STRONG_MASK,
-          }}
-        />
+        {/* 도트 레이어 — 단일 도트. mask 그라데이션은 스크롤 성능을 해쳐 제거했다. */}
         <div
           aria-hidden
           style={{
@@ -646,8 +623,6 @@ export default function App() {
             pointerEvents: "none",
             backgroundImage: BOARD_DOT_SOFT,
             backgroundSize: BOARD_DOT_SIZE,
-            WebkitMaskImage: BOARD_DOT_SOFT_MASK,
-            maskImage: BOARD_DOT_SOFT_MASK,
           }}
         />
         {/* <div
