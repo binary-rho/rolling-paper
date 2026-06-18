@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { X } from "lucide-react";
 import type { Memo } from "../App";
 
+// "전체"는 필터 전용 옵션이고, 나머지는 편지쓰기(WriteMemoModal)의 TEAMS와 일치해야 한다.
 const ALL_TEAMS = [
   "전체",
   "디지털FE팀",
@@ -12,7 +13,8 @@ const ALL_TEAMS = [
   "디지털CS BE팀",
   "디지털제휴플랫폼BE팀",
   "디지털플랫폼Ops팀",
-  "팀 없음",
+  "기획",
+  "기타",
 ];
 
 const NOTE_BG: Record<string, string> = {
@@ -232,7 +234,7 @@ export function FilterPopup({ open, onClose, memos }: FilterPopupProps) {
                     columnGap: "14px",
                   }}
                 >
-                  {filtered.map((memo, i) => {
+                  {filtered.map((memo) => {
                     const date = new Date(memo.createdAt);
                     const dateStr = `${date.getMonth() + 1}.${date.getDate()}`;
                     return (
