@@ -29,9 +29,16 @@ interface FilterPopupProps {
   open: boolean;
   onClose: () => void;
   memos: Memo[];
+  /** 모바일이면 전체화면으로 고정하고 닫기 UI(핸들바·X·배경)를 숨긴다. */
+  isMobile?: boolean;
 }
 
-export function FilterPopup({ open, onClose, memos }: FilterPopupProps) {
+export function FilterPopup({
+  open,
+  onClose,
+  memos,
+  isMobile = false,
+}: FilterPopupProps) {
   const [selectedTeam, setSelectedTeam] = useState("전체");
 
   const teamsWithMemos = ALL_TEAMS.filter(
@@ -52,32 +59,36 @@ export function FilterPopup({ open, onClose, memos }: FilterPopupProps) {
     <AnimatePresence>
       {open && (
         <>
+          {/* 딤드 배경 — 모바일에선 전체화면이라 띄우지 않는다(닫기도 불가). */}
+          {!isMobile && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onClose}
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(0,0,0,0.35)",
+                backdropFilter: "blur(6px)",
+                zIndex: 80,
+              }}
+            />
+          )}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.35)",
-              backdropFilter: "blur(6px)",
-              zIndex: 80,
-            }}
-          />
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 40 }}
+            initial={isMobile ? { opacity: 0 } : { opacity: 0, y: 40 }}
+            animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+            exit={isMobile ? { opacity: 0 } : { opacity: 0, y: 40 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             style={{
               position: "fixed",
+              top: isMobile ? 0 : "auto",
               bottom: 0,
               left: 0,
               right: 0,
-              height: "82vh",
+              height: isMobile ? "100dvh" : "82vh",
               background: "#FAFAFA",
-              borderRadius: "24px 24px 0 0",
+              borderRadius: isMobile ? 0 : "24px 24px 0 0",
               zIndex: 90,
               display: "flex",
               flexDirection: "column",
@@ -85,24 +96,26 @@ export function FilterPopup({ open, onClose, memos }: FilterPopupProps) {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Handle bar */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                paddingTop: "12px",
-                paddingBottom: "4px",
-              }}
-            >
+            {/* Handle bar — 모바일에선 숨김(닫기 제스처 없음) */}
+            {!isMobile && (
               <div
                 style={{
-                  width: "36px",
-                  height: "4px",
-                  background: "#DDDDDD",
-                  borderRadius: "2px",
+                  display: "flex",
+                  justifyContent: "center",
+                  paddingTop: "12px",
+                  paddingBottom: "4px",
                 }}
-              />
-            </div>
+              >
+                <div
+                  style={{
+                    width: "36px",
+                    height: "4px",
+                    background: "#DDDDDD",
+                    borderRadius: "2px",
+                  }}
+                />
+              </div>
+            )}
 
             {/* Header */}
             <div
@@ -138,23 +151,42 @@ export function FilterPopup({ open, onClose, memos }: FilterPopupProps) {
                 >
                   모두의 한 마디
                 </h2>
+                {/* 모바일 안내 — 꾸미기는 큰 화면(PC)에서만 가능 */}
+                {isMobile && (
+                  <p
+                    style={{
+                      marginTop: "8px",
+                      fontFamily: "'Noto Sans KR', sans-serif",
+                      fontSize: "12px",
+                      lineHeight: 1.5,
+                      color: "#888",
+                      wordBreak: "keep-all",
+                    }}
+                  >
+                    • 편지 작성과 스티커 꾸미기는 PC(넓은 화면)에서 할 수
+                    있어요.
+                  </p>
+                )}
               </div>
-              <button
-                onClick={onClose}
-                style={{
-                  width: "36px",
-                  height: "36px",
-                  borderRadius: "50%",
-                  background: "#F0F0F0",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  border: "none",
-                }}
-              >
-                <X size={16} color="#666" />
-              </button>
+              {/* 닫기 버튼 — 모바일에선 숨김(항상 열린 전체화면) */}
+              {!isMobile && (
+                <button
+                  onClick={onClose}
+                  style={{
+                    width: "36px",
+                    height: "36px",
+                    borderRadius: "50%",
+                    background: "#F0F0F0",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    border: "none",
+                  }}
+                >
+                  <X size={16} color="#666" />
+                </button>
+              )}
             </div>
 
             {/* Team filter chips */}
