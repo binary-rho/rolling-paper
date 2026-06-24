@@ -15,6 +15,7 @@ import { FilterPopup } from "./components/FilterPopup";
 import { AchievementCarousel } from "./components/AchievementCarousel";
 import { SiteFooter } from "./components/SiteFooter";
 import { IntroEnvelope } from "./components/IntroEnvelope";
+import { useIsMobile } from "./components/ui/use-mobile";
 import { useBoard } from "./hooks/useBoard";
 import { exportRollingPaperPdf } from "../lib/exportPdf";
 import { fileToStickerDataUrl } from "../lib/stickerImage";
@@ -255,6 +256,7 @@ export default function App() {
     stickerAssets,
     addStickerAsset,
   } = useBoard(sessionId);
+  const isMobile = useIsMobile();
   const [introOpen, setIntroOpen] = useState(shouldShowIntro);
   const [modalOpen, setModalOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -559,6 +561,7 @@ export default function App() {
       setExporting(false);
     }
   }, [exporting]);
+
 
   return (
     <div
@@ -892,7 +895,8 @@ export default function App() {
       {/* Footer */}
       <SiteFooter />
 
-      {/* PDF export — bottom left, separated from the action buttons */}
+      {/* PDF export — bottom left (데스크톱 전용) */}
+      {!isMobile && (
       <div
         data-export-hide
         style={{
@@ -943,8 +947,10 @@ export default function App() {
           </motion.button>
         </span>
       </div>
+      )}
 
-      {/* Floating UI buttons — bottom right */}
+      {/* Floating UI buttons — bottom right (데스크톱 전용) */}
+      {!isMobile && (
       <div
         data-export-hide
         style={{
@@ -1161,28 +1167,31 @@ export default function App() {
           </motion.button>
         </div>
       </div>
+      )}
 
-      {/* Hint text — top right */}
-      <div
-        data-export-hide
-        style={{
-          position: "fixed",
-          top: "20px",
-          right: "24px",
-          zIndex: 40,
-        }}
-      >
-        <p
+      {/* Hint text — top right (데스크톱 전용) */}
+      {!isMobile && (
+        <div
+          data-export-hide
           style={{
-            fontFamily: "'Noto Sans KR', sans-serif",
-            fontSize: "11px",
-            color: "rgba(0,0,0,0.25)",
-            letterSpacing: "0.05em",
+            position: "fixed",
+            top: "20px",
+            right: "24px",
+            zIndex: 40,
           }}
         >
-          보드를 클릭해도 편지를 남길 수 있어요
-        </p>
-      </div>
+          <p
+            style={{
+              fontFamily: "'Noto Sans KR', sans-serif",
+              fontSize: "11px",
+              color: "rgba(0,0,0,0.25)",
+              letterSpacing: "0.05em",
+            }}
+          >
+            보드를 클릭해도 편지를 남길 수 있어요
+          </p>
+        </div>
+      )}
 
       {/* Modals */}
       <WriteMemoModal
@@ -1191,9 +1200,13 @@ export default function App() {
         onSubmit={handleAddMemo}
       />
       <FilterPopup
-        open={filterOpen}
-        onClose={() => setFilterOpen(false)}
+        // 모바일에서는 항상 열어 두고(전체화면 목록), 닫기는 무시한다.
+        open={filterOpen || isMobile}
+        onClose={() => {
+          if (!isMobile) setFilterOpen(false);
+        }}
         memos={memos}
+        isMobile={isMobile}
       />
 
       {/* Toast host */}
