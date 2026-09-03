@@ -12,7 +12,6 @@ import { LetterCard } from "./components/LetterCard";
 import { MemoCard } from "./components/MemoCard";
 import { WriteMemoModal } from "./components/WriteMemoModal";
 import { FilterPopup } from "./components/FilterPopup";
-import { AchievementCarousel } from "./components/AchievementCarousel";
 import { SiteFooter } from "./components/SiteFooter";
 import { IntroEnvelope } from "./components/IntroEnvelope";
 import { useIsMobile } from "./components/ui/use-mobile";
@@ -63,18 +62,34 @@ function boardBottomSpacePx(memoCount: number): number {
 }
 
 /**
- * 보드 배경: 파스텔 그라데이션 + 단일 도트(피그잼 느낌의 땡땡이).
- * mask 그라데이션은 긴 보드에서 스크롤 성능을 해쳐 쓰지 않는다.
+ * 보드 배경: 위는 베이비블루가 살짝 감도는 하양, 아래로 갈수록 베이비핑크.
+ * 축하장 뒤편에는 은은한 후광을 깔아 아기방 조명 같은 느낌을 낸다.
+ * filter: blur 나 mask 그라데이션은 긴 보드에서 스크롤 성능을 해쳐 쓰지 않는다.
  */
-const BOARD_GRADIENT =
-  "linear-gradient(180deg, #FFFFFF 0%, #FFF6FB 60%, #FDEFF7 100%)";
+const BOARD_GRADIENT = [
+  "radial-gradient(ellipse 900px 520px at 50% 6%, rgba(186,227,255,0.38) 0%, rgba(186,227,255,0) 70%)",
+  "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 22%, #FFF7FC 58%, #FDEFF7 100%)",
+].join(", ");
 
-/** 배경 도트 간격. */
-const BOARD_DOT_SIZE = "36px 36px";
+/**
+ * 배경 파스텔 컨페티 — 아기 탄생을 은근하게 축하하는 땡땡이.
+ * 도트 하나짜리 radial-gradient를 색·크기·간격만 달리해 겹친 것이라,
+ * DOM은 여전히 한 겹이고 타일링이라 긴 보드에서도 가볍다.
+ * 첫 줄(마젠타)이 기존 배경의 리듬을 그대로 이어받는 기본 레이어다.
+ */
+const BOARD_CONFETTI = [
+  { color: "rgba(230,0,126,0.16)", dot: "1.4px", tile: "36px 36px", offset: "0 0" },
+  { color: "rgba(125,185,255,0.22)", dot: "2.4px", tile: "108px 108px", offset: "18px 30px" },
+  { color: "rgba(255,203,120,0.24)", dot: "2px", tile: "132px 132px", offset: "70px 86px" },
+  { color: "rgba(146,224,188,0.22)", dot: "2.2px", tile: "156px 156px", offset: "104px 44px" },
+] as const;
 
-/** 배경 도트 패턴(단일). */
-const BOARD_DOT_SOFT =
-  "radial-gradient(circle, rgba(230,0,126,0.18) 1.4px, transparent 1.4px)";
+const BOARD_DOT_IMAGE = BOARD_CONFETTI.map(
+  ({ color, dot }) =>
+    `radial-gradient(circle, ${color} ${dot}, transparent ${dot})`,
+).join(", ");
+const BOARD_DOT_SIZE = BOARD_CONFETTI.map(({ tile }) => tile).join(", ");
+const BOARD_DOT_POSITION = BOARD_CONFETTI.map(({ offset }) => offset).join(", ");
 
 /** 배경 LG U+ 워드마크 윤곽선 색 — 메모를 가리지 않게 아주 연한 핑크. */
 const WORDMARK_STROKE = "rgba(230,0,126, 0.5)";
@@ -90,13 +105,22 @@ const IMAGE_STICKER_PREFIX = "img:";
  */
 const IMAGE_STICKER_SIZE_PX = 48;
 
+/** 치이카와 삼총사는 표정이 보여야 하니 라이언보다 크게 붙인다. */
+const CHIIKAWA_STICKER_SIZE_PX = 88;
+
 /** 이미지 스티커 토큰 → public 경로 + 보드 표시 크기(px) 매핑. */
 const STICKER_IMAGES: Record<string, { src: string; size: number }> = {
   "img:lion": { src: "/lion.png", size: IMAGE_STICKER_SIZE_PX },
   "img:balloon": { src: "/balloon.png", size: 240 }, // 말풍선만 예외로 크게
+  "img:chii": { src: "/chii.png", size: CHIIKAWA_STICKER_SIZE_PX },
+  "img:hachi": { src: "/hachi.png", size: CHIIKAWA_STICKER_SIZE_PX },
+  "img:usagi": { src: "/usagi.png", size: CHIIKAWA_STICKER_SIZE_PX },
 };
 
 const STICKER_OPTIONS = [
+  "img:chii",
+  "img:hachi",
+  "img:usagi",
   "img:balloon",
   "img:lion",
   "🎉",
@@ -107,7 +131,8 @@ const STICKER_OPTIONS = [
   "💪",
   "🔥",
   "❤️",
-  "🥺",
+  "👶",
+  "🍼",
   "😊",
   "🎈",
   "🌈",
@@ -179,7 +204,7 @@ function getSession() {
   return id;
 }
 
-/** 인트로(상장 공개 연출)를 이미 봤는지. 첫 방문에만 보여준다. */
+/** 인트로(축하장 공개 연출)를 이미 봤는지. 첫 방문에만 보여준다. */
 const INTRO_SEEN_KEY = "rp_intro_seen";
 function shouldShowIntro() {
   try {
@@ -528,7 +553,7 @@ export default function App() {
   const closeIntro = useCallback(() => {
     setIntroOpen(false);
     markIntroSeen();
-    // 봉투를 열 때 페이지 최상단으로 올려 상장이 화면 가운데 보이게 한다.
+    // 봉투를 열 때 페이지 최상단으로 올려 축하장이 화면 가운데 보이게 한다.
     window.scrollTo({ top: 0, behavior: "auto" });
   }, []);
 
@@ -594,7 +619,7 @@ export default function App() {
             }}
           >
             <IntroEnvelope
-              to="박형윤 팀장님께"
+              to="가영님께"
               memoCount={memos.length}
               onEnter={closeIntro}
             />
@@ -616,7 +641,8 @@ export default function App() {
           overflow: "hidden",
         }}
       >
-        {/* 도트 레이어 — 단일 도트. mask 그라데이션은 스크롤 성능을 해쳐 제거했다. */}
+        {/* 컨페티 레이어 — 색·크기가 다른 도트를 한 겹에 겹쳐 깐다.
+            mask 그라데이션은 스크롤 성능을 해쳐 쓰지 않는다. */}
         <div
           aria-hidden
           style={{
@@ -624,8 +650,9 @@ export default function App() {
             inset: 0,
             zIndex: 0,
             pointerEvents: "none",
-            backgroundImage: BOARD_DOT_SOFT,
+            backgroundImage: BOARD_DOT_IMAGE,
             backgroundSize: BOARD_DOT_SIZE,
+            backgroundPosition: BOARD_DOT_POSITION,
           }}
         />
         {/* <div
@@ -686,8 +713,8 @@ export default function App() {
             }}
             style={{
               transformOrigin: "center bottom",
-              // 래퍼는 항상 클릭을 통과시키고, 상장 카드(LetterCard)만 클릭을 받는다.
-              // (LetterCard 자체가 pointerEvents:auto를 가짐) → 상장 주변 빈 공간
+              // 래퍼는 항상 클릭을 통과시키고, 축하장 카드(LetterCard)만 클릭을 받는다.
+              // (LetterCard 자체가 pointerEvents:auto를 가짐) → 축하장 주변 빈 공간
               // 클릭이 보드 캔버스로 전달되어 스티커를 붙일 수 있다.
               pointerEvents: "none",
             }}
@@ -732,13 +759,13 @@ export default function App() {
           </motion.button>
         </div>
 
-        {/* Achievements / photos carousel — content right after the card */}
-        <div ref={contentRef} style={{ position: "relative", zIndex: 6 }}>
-          <AchievementCarousel />
-        </div>
+        {/* 사진 캐러셀(AchievementCarousel)은 이번 롤링페이퍼에서는 노출하지 않는다.
+            컴포넌트 파일은 남겨 두었으니, 다시 쓰려면 여기에 되살리면 된다. */}
 
-        {/* Open space below so letters have room to land — 메모가 많을수록 넓어진다 */}
+        {/* Open space below so letters have room to land — 메모가 많을수록 넓어진다.
+            스크롤 다운 버튼이 가리키는 목적지이기도 하다(contentRef). */}
         <div
+          ref={contentRef}
           style={{
             height: `${boardBottomSpacePx(memos.length)}px`,
             pointerEvents: "none",

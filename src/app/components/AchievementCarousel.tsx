@@ -84,6 +84,11 @@ interface Milestone {
   image?: string;
 }
 
+/**
+ * 캐러셀에 깔리는 추억 목록.
+ * 사진을 바꿀 때는 `public/`에 파일을 넣고 `image`를 그 경로로 바꾸면 된다.
+ * (`image`를 비우면 연도만 크게 보이는 플레이스홀더가 표시된다.)
+ */
 const MILESTONES: Milestone[] = [
   {
     year: "2022",
@@ -106,7 +111,7 @@ const MILESTONES: Milestone[] = [
   {
     year: "2023",
     title: "해커톤",
-    description: "멘토로 참가하신 형윤님!",
+    description: "멘토로, 참가자로 함께 뛰어든 우리 팀",
     image: "/2023-hackaton2.jpeg",
   },
   {
@@ -130,7 +135,7 @@ const MILESTONES: Milestone[] = [
   {
     year: "2024",
     title: "9월의 산타",
-    description: "늘 통크게 선물해주셨던 형윤님.",
+    description: "계절을 앞질러 찾아온 선물 보따리",
     image: "/2024-moono.jpeg",
   },
   {
@@ -142,7 +147,7 @@ const MILESTONES: Milestone[] = [
   {
     year: "2025",
     title: "디지털고객경험지수 2년 연속 1위",
-    description: "LG유플러스의 값진 성과, 그 뒤엔 팀장님의 손길이 있었습니다.",
+    description: "LG유플러스의 값진 성과, 그 뒤엔 우리 모두의 손길이 있었습니다.",
     image: "/2025-first.png",
   },
   {

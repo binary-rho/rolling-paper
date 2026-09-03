@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 
 interface IntroEnvelopeProps {
-  /** 받는 사람 표시(예: "박형윤 팀장님께"). */
+  /** 받는 사람 표시(예: "가영님께"). */
   to: string;
   /** 함께한 사람 수 — 봉투에 작은 카피로 노출. */
   memoCount: number;
@@ -9,9 +9,26 @@ interface IntroEnvelopeProps {
   onEnter: () => void;
 }
 
-const serif = "'Nanum Myeongjo', 'Noto Serif KR', serif";
-const GOLD = "#c9a227";
-const PAPER = "#fffdf7";
+/** 축하장(LetterCard)과 같은 크레용 손글씨 — 봉투를 열면 톤이 이어진다. */
+const TITLE_FONT = "'Gaegu', 'Noto Sans KR', sans-serif";
+const BODY_FONT = "'Gowun Dodum', 'Noto Sans KR', sans-serif";
+
+/**
+ * 봉투 팔레트 — 안에 든 축하장(LetterCard)과 같은 파스텔 핑크 계열로 맞춘다.
+ * 봉투를 열면 같은 톤의 카드가 나오도록 색을 이어 준다.
+ */
+const PAPER = "#FFFBFD";
+const PAPER_DEEP = "#FCE4F0";
+/** 안쪽 점선 스티치 */
+const STITCH_PINK = "rgba(232,150,190,0.55)";
+/** 봉투 뚜껑 면 */
+const FLAP_PINK = "rgba(232,150,190,0.16)";
+/** 뚜껑 사선 라인 */
+const FLAP_LINE = "rgba(232,150,190,0.34)";
+/** 받는 사람 이름 */
+const TITLE_TEXT = "#4A2439";
+/** 하단 보조 카피 */
+const SUB_TEXT = "#B5789B";
 
 /**
  * 첫 방문 인트로에서 화면 중앙에 띄우는 "편지 봉투" 카드.
@@ -33,10 +50,10 @@ export function IntroEnvelope({ to, memoCount, onEnter }: IntroEnvelopeProps) {
         border: "none",
         padding: 0,
         cursor: "pointer",
-        background: `linear-gradient(180deg, ${PAPER} 0%, #fbf1d9 100%)`,
+        background: `linear-gradient(180deg, ${PAPER} 0%, ${PAPER_DEEP} 100%)`,
         borderRadius: "12px",
         boxShadow:
-          "0 0 90px rgba(255,235,180,0.4), 0 36px 80px rgba(0,0,0,0.5)",
+          "0 0 90px rgba(255,206,232,0.45), 0 36px 80px rgba(0,0,0,0.5)",
         overflow: "hidden",
       }}
     >
@@ -45,7 +62,7 @@ export function IntroEnvelope({ to, memoCount, onEnter }: IntroEnvelopeProps) {
         style={{
           position: "absolute",
           inset: "14px",
-          border: `1px dashed rgba(201,162,39,0.55)`,
+          border: `1px dashed ${STITCH_PINK}`,
           borderRadius: "8px",
           pointerEvents: "none",
         }}
@@ -61,7 +78,7 @@ export function IntroEnvelope({ to, memoCount, onEnter }: IntroEnvelopeProps) {
           height: 0,
           borderLeft: "min(345px, 46vw) solid transparent",
           borderRight: "min(345px, 46vw) solid transparent",
-          borderTop: "min(230px, 30vw) solid rgba(201,162,39,0.16)",
+          borderTop: `min(230px, 30vw) solid ${FLAP_PINK}`,
         }}
       />
       {/* 뚜껑 좌/우 사선 라인 */}
@@ -70,8 +87,7 @@ export function IntroEnvelope({ to, memoCount, onEnter }: IntroEnvelopeProps) {
           position: "absolute",
           inset: 0,
           pointerEvents: "none",
-          background:
-            "linear-gradient(to bottom right, transparent calc(50% - 0.5px), rgba(201,162,39,0.3) 50%, transparent calc(50% + 0.5px)) no-repeat",
+          background: `linear-gradient(to bottom right, transparent calc(50% - 0.5px), ${FLAP_LINE} 50%, transparent calc(50% + 0.5px)) no-repeat`,
           backgroundSize: "50% 66%",
         }}
       />
@@ -80,8 +96,7 @@ export function IntroEnvelope({ to, memoCount, onEnter }: IntroEnvelopeProps) {
           position: "absolute",
           inset: 0,
           pointerEvents: "none",
-          background:
-            "linear-gradient(to bottom left, transparent calc(50% - 0.5px), rgba(201,162,39,0.3) 50%, transparent calc(50% + 0.5px)) no-repeat",
+          background: `linear-gradient(to bottom left, transparent calc(50% - 0.5px), ${FLAP_LINE} 50%, transparent calc(50% + 0.5px)) no-repeat`,
           backgroundSize: "50% 66%",
           backgroundPosition: "right top",
         }}
@@ -98,19 +113,19 @@ export function IntroEnvelope({ to, memoCount, onEnter }: IntroEnvelopeProps) {
           height: "110px",
           borderRadius: "50%",
           background:
-            "radial-gradient(circle at 35% 30%, #e2bf57 0%, #c9a227 55%, #a9851b 100%)",
+            "radial-gradient(circle at 35% 30%, #FCC0DC 0%, #EE8FBB 55%, #D66C9E 100%)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           boxShadow:
-            "0 8px 18px rgba(0,0,0,0.28), inset 0 0 0 4px rgba(255,253,247,0.25)",
+            "0 8px 18px rgba(0,0,0,0.24), inset 0 0 0 4px rgba(255,251,253,0.32)",
         }}
       >
         <span
           style={{
-            fontFamily: serif,
-            fontWeight: 800,
-            fontSize: "32px",
+            fontFamily: TITLE_FONT,
+            fontWeight: 700,
+            fontSize: "36px",
             color: PAPER,
             letterSpacing: "0.02em",
           }}
@@ -131,11 +146,11 @@ export function IntroEnvelope({ to, memoCount, onEnter }: IntroEnvelopeProps) {
       >
         <p
           style={{
-            fontFamily: serif,
-            fontSize: "22px",
+            fontFamily: TITLE_FONT,
+            fontSize: "30px",
             fontWeight: 700,
-            color: "#3a2f12",
-            letterSpacing: "0.05em",
+            color: TITLE_TEXT,
+            letterSpacing: "0.03em",
             marginBottom: "7px",
           }}
         >
@@ -143,9 +158,9 @@ export function IntroEnvelope({ to, memoCount, onEnter }: IntroEnvelopeProps) {
         </p>
         <p
           style={{
-            fontFamily: "'Noto Sans KR', sans-serif",
+            fontFamily: BODY_FONT,
             fontSize: "14px",
-            color: "#9a8541",
+            color: SUB_TEXT,
             letterSpacing: "0.03em",
           }}
         >

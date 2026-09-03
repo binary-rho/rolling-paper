@@ -415,7 +415,7 @@ export function WriteMemoModal({
                     <textarea
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      placeholder="형윤님께 전하고 싶은 마음을 담아보세요"
+                      placeholder="가영님께 전하고 싶은 마음을 담아보세요"
                       maxLength={200}
                       rows={4}
                       style={{
