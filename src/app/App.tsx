@@ -204,8 +204,14 @@ function getSession() {
   return id;
 }
 
-/** 인트로(축하장 공개 연출)를 이미 봤는지. 첫 방문에만 보여준다. */
-const INTRO_SEEN_KEY = "rp_intro_seen";
+/**
+ * 인트로(축하장 공개 연출)를 이미 봤는지. 첫 방문에만 보여준다.
+ *
+ * 키에 대상을 붙여 버전을 나눈다. 같은 도메인에 이전 롤링페이퍼가 올라갔던 적이
+ * 있어서, 키를 그대로 쓰면 그때 방문했던 사람들은 localStorage에 플래그가 남아
+ * 새 봉투 연출을 건너뛰게 된다. 대상이 바뀌면 키도 함께 올린다.
+ */
+const INTRO_SEEN_KEY = "rp_intro_seen_gayoung";
 function shouldShowIntro() {
   try {
     return !localStorage.getItem(INTRO_SEEN_KEY);

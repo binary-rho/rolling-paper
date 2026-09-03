@@ -231,16 +231,6 @@ export function LetterCard({ memoCount }: LetterCardProps) {
               >
                 유플러스 FE팀 일동
               </p>
-              <p
-                style={{
-                  fontFamily: BODY_FONT,
-                  fontSize: "11.5px",
-                  color: "#A99AA1",
-                  marginTop: "2px",
-                }}
-              >
-                (그리고 가영님을 응원할 랩 전체)
-              </p>
             </div>
 
             {/* 직인 대신 축하하는 하치와레 */}
