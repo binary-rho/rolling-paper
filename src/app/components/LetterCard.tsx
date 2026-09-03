@@ -1,11 +1,58 @@
 import { motion } from "motion/react";
-import stampImg from "../../imports/stamp.png";
 
 interface LetterCardProps {
   memoCount: number;
 }
 
-const serif = "'Nanum Myeongjo', 'Noto Serif KR', serif";
+/**
+ * 축하장 서체 — 상장 느낌을 주던 명조체 대신,
+ * 제목은 크레용 손글씨(Gaegu), 본문은 둥근 고딕(Gowun Dodum)을 쓴다.
+ * 두 폰트는 index.html의 Google Fonts 링크에서 함께 받아온다.
+ */
+const TITLE_FONT = "'Gaegu', 'Noto Sans KR', sans-serif";
+const BODY_FONT = "'Gowun Dodum', 'Noto Sans KR', sans-serif";
+
+/**
+ * 축하장 팔레트 — 치이카와 삼총사(치이=핑크 / 하치와레=블루 / 우사기=크림)와
+ * 같은 계열로 맞춰, 캐릭터가 카드에 얹혔을 때 한 몸처럼 보이게 한다.
+ */
+const FRAME_GRADIENT =
+  "linear-gradient(135deg, #FFF4FA 0%, #FFDDEC 28%, #F3F9FF 54%, #FFF1DE 78%, #FFE9F4 100%)";
+const BORDER_PINK = "#F3B8D4";
+/** 부제·받는이 보조 텍스트 */
+const ACCENT_PINK = "#C97BA4";
+/** 본문 강조 */
+const STRONG_PINK = "#B0537F";
+/** 점선 구분선 */
+const SOFT_PINK = "#E9B4CE";
+const TITLE_COLOR = "#4A2E3B";
+const BODY_COLOR = "#5B4A52";
+/** 함께한 사람 수 강조 — LG U+ 브랜드 마젠타 */
+const BRAND_MAGENTA = "#E6007E";
+
+/** 축하장 하단에 찍히는 날짜. 휴가 시작 시점에 맞춰 바꾼다. */
+const GRANTED_AT = "2026년 10월";
+
+/**
+ * 카드를 꾸미는 캐릭터 크기. 위쪽 두 마리는 이 값의 절반쯤 위로 올라가
+ * 카드 테두리에 걸터앉은 것처럼 보인다.
+ */
+const CHARACTER_SIZE = "clamp(62px, 13.2vw, 94px)";
+const CHARACTER_TOP_OFFSET = `calc(-1 * ${CHARACTER_SIZE} / 2.1)`;
+/** 카드 좌우 끝에서 캐릭터까지의 여백. */
+const CHARACTER_SIDE_INSET = "clamp(6px, 3vw, 26px)";
+/** 보내는이 옆(옛 직인 자리) 캐릭터는 테두리에 걸린 둘보다 살짝 크게. */
+const FOOTER_CHARACTER_SIZE = "clamp(70px, 15vw, 102px)";
+
+/** 캐릭터가 살짝 떠 있는 느낌을 주는 상하 흔들림(px)과 주기(초). */
+const BOB_DISTANCE_PX = 5;
+const BOB_DURATION_SEC = 3.4;
+
+/** 테두리에 걸터앉는 위쪽 캐릭터 두 마리. */
+const PERCHED_CHARACTERS = [
+  { src: "/chii.png", alt: "축하하는 치이카와", side: "left", rotate: -9 },
+  { src: "/usagi.png", alt: "축하하는 우사기", side: "right", rotate: 9 },
+] as const;
 
 export function LetterCard({ memoCount }: LetterCardProps) {
   return (
@@ -18,184 +65,141 @@ export function LetterCard({ memoCount }: LetterCardProps) {
         margin: "2vw auto 0",
         width: "min(520px, 92vw)",
         zIndex: 10,
-        // 상장도 보드의 일부로 취급한다. 클릭을 막지 않아 상장 위에서도
+        // 축하장도 보드의 일부로 취급한다. 클릭을 막지 않아 축하장 위에서도
         // 스티커를 붙이거나 편지를 남길 수 있다(클릭이 보드 캔버스로 통과).
         pointerEvents: "none",
         cursor: "default",
       }}
     >
-      {/* Outer gold frame */}
+      {/* Outer pastel frame */}
       <div
         style={{
           position: "relative",
-          background:
-            "linear-gradient(135deg, #f5e6b8 0%, #d4af37 25%, #f9f0c8 50%, #c9a227 75%, #e8d089 100%)",
-          borderRadius: "8px",
-          padding: "10px",
+          background: FRAME_GRADIENT,
+          borderRadius: "30px",
+          padding: "9px",
           boxShadow:
-            "0 1px 2px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.10), 0 30px 60px rgba(0,0,0,0.12)",
+            "0 10px 30px rgba(230,0,126,0.10), 0 28px 60px rgba(0,0,0,0.07)",
         }}
       >
-        {/* Inner gold hairline frame */}
+        {/* Inner card — 점선 테두리로 딱딱한 각을 덜어낸다. */}
         <div
           style={{
             position: "relative",
             background: "#FFFFFF",
-            border: "1.5px solid #c9a227",
-            outline: "1px solid #e8d089",
-            outlineOffset: "3px",
-            borderRadius: "3px",
+            border: `1.5px dashed ${BORDER_PINK}`,
+            borderRadius: "24px",
             padding:
-              "clamp(28px, 6vw, 48px) clamp(26px, 5.5vw, 44px) clamp(26px, 5vw, 40px)",
+              "clamp(34px, 7vw, 52px) clamp(26px, 5.5vw, 44px) clamp(26px, 5vw, 40px)",
             overflow: "hidden",
           }}
         >
-          {/* Corner flourishes */}
-          {(
-            [
-              { top: 10, left: 10, rotate: 0 },
-              { top: 10, right: 10, rotate: 90 },
-              { bottom: 10, right: 10, rotate: 180 },
-              { bottom: 10, left: 10, rotate: 270 },
-            ] as const
-          ).map(({ rotate, ...pos }, i) => (
-            <div
-              key={i}
-              style={{
-                position: "absolute",
-                width: "26px",
-                height: "26px",
-                borderTop: "2px solid #c9a227",
-                borderLeft: "2px solid #c9a227",
-                opacity: 0.7,
-                ...pos,
-                transform: `rotate(${rotate}deg)`,
-              }}
-            />
-          ))}
-
-          {/* Trophy + wit badge */}
-          <div
-            style={{
-              textAlign: "center",
-              marginBottom: "10px",
-            }}
-          >
-            <div style={{ fontSize: "34px", lineHeight: 1 }}>🏆</div>
-            <span
-              style={{
-                display: "inline-block",
-                marginTop: "10px",
-                padding: "3px 12px",
-                fontFamily: "'Noto Sans KR', sans-serif",
-                fontSize: "10px",
-                fontWeight: 700,
-                letterSpacing: "0.12em",
-                color: "#8a6d1f",
-                background: "rgba(212,175,55,0.14)",
-                border: "1px solid #d4af37",
-                borderRadius: "999px",
-              }}
-            >
-              MADE IN U+ FE
-            </span>
-          </div>
-
           {/* Title */}
           <h1
             style={{
-              fontFamily: serif,
-              fontWeight: 800,
-              fontSize: "clamp(30px, 7vw, 46px)",
-              color: "#1a1a1a",
+              fontFamily: TITLE_FONT,
+              fontWeight: 700,
+              fontSize: "clamp(40px, 9.5vw, 60px)",
+              color: TITLE_COLOR,
               textAlign: "center",
-              letterSpacing: "0.3em",
-              textIndent: "0.3em",
-              margin: "6px 0 6px",
+              letterSpacing: "0.02em",
+              lineHeight: 1.15,
+              margin: "0 0 4px",
             }}
           >
-            상&nbsp;&nbsp;장
+            축하합니다
           </h1>
 
           {/* Subtitle */}
           <p
             style={{
-              fontFamily: serif,
-              fontSize: "12px",
-              color: "#8a6d1f",
+              fontFamily: BODY_FONT,
+              fontSize: "13px",
+              color: ACCENT_PINK,
               textAlign: "center",
-              letterSpacing: "0.04em",
-              marginBottom: "20px",
+              letterSpacing: "0.02em",
+              marginBottom: "22px",
             }}
           >
-            — 글로벌 인재 수출 인증서 / Made in U+ FE —
+            출산휴가 · 육아휴직을 앞두고
           </p>
 
-          {/* Gold divider */}
+          {/* Dotted divider */}
           <div
             style={{
-              width: "60%",
-              height: "1px",
-              margin: "0 auto 22px",
-              background:
-                "linear-gradient(90deg, transparent, #d4af37 30%, #c9a227 70%, transparent)",
+              width: "62%",
+              margin: "0 auto 24px",
+              borderTop: `1.5px dashed ${SOFT_PINK}`,
             }}
           />
 
           {/* Recipient */}
-          <p
-            style={{
-              fontFamily: serif,
-              fontSize: "clamp(18px, 4.5vw, 24px)",
-              fontWeight: 700,
-              color: "#0f0f0f",
-              textAlign: "center",
-              letterSpacing: "0.06em",
-              marginBottom: "22px",
-            }}
-          >
-            박 형 윤 귀하
-          </p>
+          <div style={{ textAlign: "center", marginBottom: "24px" }}>
+            <p
+              style={{
+                fontFamily: TITLE_FONT,
+                fontSize: "clamp(26px, 6vw, 34px)",
+                fontWeight: 700,
+                color: TITLE_COLOR,
+                lineHeight: 1.2,
+                marginBottom: "2px",
+              }}
+            >
+              가영님께
+            </p>
+            <p
+              style={{
+                fontFamily: BODY_FONT,
+                fontSize: "14px",
+                color: ACCENT_PINK,
+                letterSpacing: "0.02em",
+              }}
+            >
+              그리고 곧 만날 아기에게
+            </p>
+          </div>
 
           {/* Body */}
           <div
             style={{
-              fontFamily: serif,
-              fontSize: "14px",
-              color: "#3a3a3a",
-              lineHeight: 2.05,
+              fontFamily: BODY_FONT,
+              fontSize: "14.5px",
+              color: BODY_COLOR,
+              lineHeight: 1.95,
               wordBreak: "keep-all",
               letterSpacing: "0.01em",
             }}
           >
             <p style={{ marginBottom: "16px" }}>
-              위 사람은 유플러스 FE팀 팀장으로 재직하는 동안, 어떤 무리한 요구
-              앞에서도{" "}
-              <strong style={{ color: "#1a1a1a" }}>"네, 됩니다"</strong>를
-              외치는 든든함으로 랩 전체를 지탱해 왔습니다.
+              함께 일하며 늘 든든했던 가영님이, 이제 무엇보다{" "}
+              <strong style={{ color: STRONG_PINK, fontWeight: 400 }}>
+                소중한 시간
+              </strong>
+              을 맞이합니다.
             </p>
             <p style={{ marginBottom: "16px" }}>
-              이에 그 공로와 무한한 잠재력을 인정하여 이 상장을 수여합니다.
+              그동안 팀을 지탱해 주신 그 마음을 오래 기억하겠습니다. 이제는 그
+              마음을 온전히 가영님과 아기에게 써 주세요.
             </p>
             <p>
-              그 실력이 국내 수요를 한참 초과한 나머지, 이에 부득이하게 글로벌
-              시장으로의 <strong style={{ color: "#1a1a1a" }}>'수출'</strong>을
-              정식 승인하는 바입니다.
+              건강하게, 편안하게. 그리고{" "}
+              <strong style={{ color: STRONG_PINK, fontWeight: 400 }}>
+                돌아오실 그날
+              </strong>
+              까지 이 자리에서 기다리겠습니다. 💐
             </p>
           </div>
 
-          {/* Gold divider */}
+          {/* Dotted divider */}
           <div
             style={{
               width: "100%",
-              height: "1px",
-              margin: "26px 0 22px",
-              background:
-                "linear-gradient(90deg, transparent, #d4af37 30%, #c9a227 70%, transparent)",
+              margin: "28px 0 22px",
+              borderTop: `1.5px dashed ${SOFT_PINK}`,
             }}
           />
 
-          {/* Footer: date + grantor + seal */}
+          {/* Footer: date + sender + 우사기 */}
           <div
             style={{
               display: "flex",
@@ -207,49 +211,57 @@ export function LetterCard({ memoCount }: LetterCardProps) {
             <div>
               <p
                 style={{
-                  fontFamily: serif,
-                  fontSize: "15px",
-                  color: "#1a1a1a",
-                  fontWeight: 600,
-                  letterSpacing: "0.06em",
-                  marginBottom: "6px",
+                  fontFamily: BODY_FONT,
+                  fontSize: "14px",
+                  color: ACCENT_PINK,
+                  letterSpacing: "0.02em",
+                  marginBottom: "4px",
                 }}
               >
-                2026년 6월
+                {GRANTED_AT}
               </p>
               <p
                 style={{
-                  fontFamily: serif,
-                  fontSize: "16px",
-                  color: "#0f0f0f",
+                  fontFamily: TITLE_FONT,
+                  fontSize: "22px",
                   fontWeight: 700,
-                  letterSpacing: "0.04em",
+                  color: TITLE_COLOR,
+                  lineHeight: 1.3,
                 }}
               >
                 유플러스 FE팀 일동
               </p>
               <p
                 style={{
-                  fontFamily: serif,
-                  fontSize: "11px",
-                  color: "#999",
-                  marginTop: "4px",
+                  fontFamily: BODY_FONT,
+                  fontSize: "11.5px",
+                  color: "#A99AA1",
+                  marginTop: "2px",
                 }}
               >
-                (그리고 팀장님을 그리워할 랩 전체)
+                (그리고 가영님을 응원할 랩 전체)
               </p>
             </div>
 
-            {/* Seal / stamp */}
-            <img
-              src={stampImg}
-              alt="유플러스 FE팀 직인"
+            {/* 직인 대신 축하하는 하치와레 */}
+            <motion.img
+              src="/hachi.png"
+              alt="축하하는 하치와레"
+              draggable={false}
+              // 회전은 style이 아니라 animate로 준다. motion이 transform을
+              // 직접 만들어 쓰기 때문에, style의 transform은 덮어써진다.
+              animate={{ y: [0, -BOB_DISTANCE_PX, 0], rotate: 6 }}
+              transition={{
+                duration: BOB_DURATION_SEC,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 0.8,
+              }}
               style={{
                 flexShrink: 0,
-                width: "80px",
-                height: "80px",
-                objectFit: "contain",
-                transform: "rotate(-8deg)",
+                width: FOOTER_CHARACTER_SIZE,
+                height: "auto",
+                userSelect: "none",
               }}
             />
           </div>
@@ -257,21 +269,50 @@ export function LetterCard({ memoCount }: LetterCardProps) {
           {/* Co-signers count */}
           <p
             style={{
-              fontFamily: "'Noto Sans KR', sans-serif",
-              fontSize: "11px",
-              color: "#b09a55",
+              fontFamily: BODY_FONT,
+              fontSize: "12px",
+              color: SOFT_PINK,
               textAlign: "center",
-              letterSpacing: "0.03em",
-              marginTop: "22px",
+              letterSpacing: "0.02em",
+              marginTop: "20px",
             }}
           >
-            <span style={{ color: "#c0392b", fontWeight: 700 }}>
+            <span style={{ color: BRAND_MAGENTA, fontWeight: 700 }}>
               {memoCount}
             </span>
             명이 마음을 보탰습니다
           </p>
         </div>
       </div>
+
+      {/* 테두리에 걸터앉은 치이카와 · 우사기 — 프레임 뒤가 아니라 위에 그린다. */}
+      {PERCHED_CHARACTERS.map(({ src, alt, side, rotate }, i) => (
+        <motion.img
+          key={src}
+          src={src}
+          alt={alt}
+          draggable={false}
+          animate={{ y: [0, -BOB_DISTANCE_PX, 0], rotate }}
+          transition={{
+            duration: BOB_DURATION_SEC,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: i * 0.7,
+          }}
+          style={{
+            position: "absolute",
+            top: CHARACTER_TOP_OFFSET,
+            left: side === "left" ? CHARACTER_SIDE_INSET : undefined,
+            right: side === "right" ? CHARACTER_SIDE_INSET : undefined,
+            width: CHARACTER_SIZE,
+            height: "auto",
+            zIndex: 2,
+            userSelect: "none",
+            pointerEvents: "none",
+            filter: "drop-shadow(0 6px 10px rgba(0,0,0,0.10))",
+          }}
+        />
+      ))}
     </motion.div>
   );
 }
