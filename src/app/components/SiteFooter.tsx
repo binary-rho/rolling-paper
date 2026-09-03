@@ -32,7 +32,7 @@ export function SiteFooter() {
               marginBottom: "8px",
             }}
           >
-            LG U+ <span style={{ color: "#E6007E" }}>·</span> 디지털플랫폼개발랩
+            LG U+ <span style={{ color: "#E6007E" }}>·</span> 디지털FE팀
           </p>
           <p
             style={{
@@ -55,7 +55,7 @@ export function SiteFooter() {
             color: "rgba(255,255,255,0.4)",
           }}
         >
-          © 2026 디지털플랫폼개발랩 · 디지털FE팀
+          © 2026 디지털FE팀
         </p>
       </div>
     </footer>
