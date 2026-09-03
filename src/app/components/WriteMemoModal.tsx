@@ -446,7 +446,7 @@ export function WriteMemoModal({
                         fontFamily: "'Noto Sans KR', sans-serif",
                       }}
                     >
-                      {message.length} / 200
+                      {message.length} / 500
                     </p>
                   </div>
                 </div>
